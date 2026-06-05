@@ -17,20 +17,59 @@ enum Role {
   MASTER
 }
 
+enum WalletTransactionType {
+  CREDIT
+  DEBIT
+}
+
 model User {
-  id                         String    @id @default(cuid())
-  email                      String    @unique
-  passwordHash               String
-  role                       Role      @default(MASTER)
-  isEmailVerified            Boolean   @default(false)
-  emailVerifiedAt            DateTime?
-  refreshTokenHash           String?
-  emailVerificationCodeHash  String?
+  id                             String              @id @default(cuid())
+  email                          String              @unique
+  passwordHash                   String
+  role                           Role                @default(MASTER)
+  isEmailVerified                Boolean             @default(false)
+  emailVerifiedAt                DateTime?
+  refreshTokenHash               String?
+  emailVerificationCodeHash      String?
   emailVerificationCodeExpiresAt DateTime?
-  passwordResetCodeHash      String?
-  passwordResetCodeExpiresAt DateTime?
-  createdAt                  DateTime  @default(now())
-  updatedAt                  DateTime  @updatedAt
+  passwordResetCodeHash          String?
+  passwordResetCodeExpiresAt     DateTime?
+  createdAt                      DateTime            @default(now())
+  updatedAt                      DateTime            @updatedAt
+
+  wallet                         Wallet?
+  walletTransactionsPerformed    WalletTransaction[] @relation("WalletTransactionActor")
 
   @@map("users")
+}
+
+model Wallet {
+  id        String    @id @default(cuid())
+  userId    String    @unique
+  balance   Decimal   @db.Decimal(20, 2) @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions WalletTransaction[]
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id           String               @id @default(cuid())
+  walletId     String
+  actorUserId  String
+  type         WalletTransactionType
+  amount       Decimal              @db.Decimal(20, 2)
+  reason       String
+  balanceAfter Decimal              @db.Decimal(20, 2)
+  createdAt    DateTime             @default(now())
+
+  wallet    Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  actorUser User   @relation("WalletTransactionActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@index([walletId, createdAt(sort: Desc)])
+  @@index([actorUserId, createdAt(sort: Desc)])
+  @@map("wallet_transactions")
 }

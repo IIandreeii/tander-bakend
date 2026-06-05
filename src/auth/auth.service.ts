@@ -8,7 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService, type JwtSignOptions } from '@nestjs/jwt';
 import { randomInt } from 'crypto';
 import * as bcrypt from 'bcrypt';
-import { Role } from '../../generated/prisma/client';
+import { Prisma, Role } from '../../generated/prisma/client';
 import { UsersService } from '../users/users.service';
 import { MailService } from '../mail/mail.service';
 import type {
@@ -54,6 +54,11 @@ export class AuthService {
       isEmailVerified: false,
       emailVerificationCodeHash: verificationCodeHash,
       emailVerificationCodeExpiresAt: verificationCodeExpiresAt,
+      wallet: {
+        create: {
+          balance: new Prisma.Decimal(0),
+        },
+      },
     });
 
     await this.mailService.sendVerificationCode(dto.email, verificationCode);
