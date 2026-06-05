@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { MailModule } from './mail/mail.module';
 import { WalletModule } from './wallet/wallet.module';
+import { OrdersModule } from './orders/orders.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { WalletModule } from './wallet/wallet.module';
     MailModule,
     AuthModule,
     WalletModule,
+    OrdersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -22,6 +22,21 @@ enum WalletTransactionType {
   DEBIT
 }
 
+enum OrderPackageType {
+  XXS
+  XS
+  S
+  M
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
 model User {
   id                             String              @id @default(cuid())
   email                          String              @unique
@@ -39,6 +54,8 @@ model User {
 
   wallet                         Wallet?
   walletTransactionsPerformed    WalletTransaction[] @relation("WalletTransactionActor")
+  orders                         Order[]
+  orderStatusHistoryPerformed    OrderStatusHistory[] @relation("OrderStatusHistoryActor")
 
   @@map("users")
 }
@@ -60,6 +77,7 @@ model WalletTransaction {
   id           String               @id @default(cuid())
   walletId     String
   actorUserId  String
+  orderId      String?              @unique
   type         WalletTransactionType
   amount       Decimal              @db.Decimal(20, 2)
   reason       String
@@ -68,8 +86,45 @@ model WalletTransaction {
 
   wallet    Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
   actorUser User   @relation("WalletTransactionActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+  order     Order? @relation("OrderDeliveredChargeTransaction", fields: [orderId], references: [id], onDelete: SetNull)
 
   @@index([walletId, createdAt(sort: Desc)])
   @@index([actorUserId, createdAt(sort: Desc)])
   @@map("wallet_transactions")
+}
+
+model Order {
+  id                          String               @id @default(cuid())
+  userId                      String
+  packageType                 OrderPackageType
+  status                      OrderStatus          @default(PENDING)
+  origin                      String
+  destination                 String
+  recipientFullName           String
+  recipientPhone              String
+  createdAt                   DateTime             @default(now())
+  updatedAt                   DateTime             @updatedAt
+
+  user                        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  statusHistory               OrderStatusHistory[]
+  deliveredChargeTransaction   WalletTransaction?   @relation("OrderDeliveredChargeTransaction")
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@map("orders")
+}
+
+model OrderStatusHistory {
+  id              String      @id @default(cuid())
+  orderId         String
+  status          OrderStatus
+  changedByUserId String
+  createdAt       DateTime    @default(now())
+
+  order           Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  changedByUser   User        @relation("OrderStatusHistoryActor", fields: [changedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([orderId, createdAt(sort: Desc)])
+  @@index([changedByUserId, createdAt(sort: Desc)])
+  @@map("order_status_history")
 }
