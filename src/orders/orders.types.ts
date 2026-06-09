@@ -43,6 +43,7 @@ export interface OrderSummary {
   destination: string;
   recipientFullName: string;
   recipientPhone: string;
+  note: string | null;
   createdAt: Date;
   updatedAt: Date;
   deliveredChargeTransactionId: string | null;

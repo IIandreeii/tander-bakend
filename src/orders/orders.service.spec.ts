@@ -117,6 +117,7 @@ describe('OrdersService', () => {
     destination: 'B',
     recipientFullName: 'Test Receiver',
     recipientPhone: '+5491111111111',
+    note: 'Internal note',
     createdAt: new Date('2026-06-05T00:00:00.000Z'),
     updatedAt: new Date('2026-06-05T00:00:00.000Z'),
     deliveredChargeTransactionId: null,
@@ -153,6 +154,7 @@ describe('OrdersService', () => {
         destination: 'Destination',
         recipientFullName: 'Recipient',
         recipientPhone: '123456789',
+        note: 'Internal note',
         packageType: OrderPackageType.XS,
       }),
     ).rejects.toThrow('Not enough order creation capacity');

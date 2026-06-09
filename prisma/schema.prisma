@@ -4,9 +4,12 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  runtime      = "nodejs"
+  moduleFormat = "cjs"
 }
+
 
 datasource db {
   provider = "postgresql"
@@ -102,6 +105,7 @@ model Order {
   destination                 String
   recipientFullName           String
   recipientPhone              String
+  note                        String?
   createdAt                   DateTime             @default(now())
   updatedAt                   DateTime             @updatedAt
 

@@ -47,6 +47,7 @@ interface OrderRecord {
   destination: string;
   recipientFullName: string;
   recipientPhone: string;
+  note: string | null;
   createdAt: Date;
   updatedAt: Date;
   deliveredChargeTransaction?: {
@@ -97,6 +98,7 @@ export class OrdersService {
           destination: dto.destination,
           recipientFullName: dto.recipientFullName,
           recipientPhone: dto.recipientPhone,
+          note: dto.note ?? null,
           status: OrderStatus.PENDING,
         },
         include: {
@@ -430,6 +432,7 @@ export class OrdersService {
       destination: order.destination,
       recipientFullName: order.recipientFullName,
       recipientPhone: order.recipientPhone,
+      note: order.note,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
       deliveredChargeTransactionId: order.deliveredChargeTransaction?.id ?? null,
