@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { Role } from '../../generated/prisma/client';
 import type { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -6,6 +6,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { UpdateOrderDto } from './dto/update-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { OrdersService } from './orders.service';
 
@@ -47,6 +48,19 @@ export class OrdersController {
   @Get('me/:orderId/history')
   getMyOrderHistory(@CurrentUser() user: AuthenticatedUser, @Param('orderId') orderId: string) {
     return this.ordersService.getMyOrderHistory(user.id, orderId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('me/:orderId')
+  updateOrder(@CurrentUser() user: AuthenticatedUser, @Param('orderId') orderId: string, @Body() dto: UpdateOrderDto) {
+    return this.ordersService.updateOrder(user.id, orderId, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(204)
+  @Delete('me/:orderId')
+  deleteOrder(@CurrentUser() user: AuthenticatedUser, @Param('orderId') orderId: string) {
+    return this.ordersService.deleteOrder(user.id, orderId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

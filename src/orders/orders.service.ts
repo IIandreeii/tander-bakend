@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { Prisma, OrderStatus, WalletTransactionType } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { UpdateOrderDto } from './dto/update-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import {
   ORDER_ACTIVE_STATUSES,
@@ -48,6 +49,12 @@ interface OrderRecord {
   recipientFullName: string;
   recipientPhone: string;
   note: string | null;
+  weightGrams: number;
+  collectionAmount: Prisma.Decimal | null;
+  originLat: Prisma.Decimal | null;
+  originLng: Prisma.Decimal | null;
+  destinationLat: Prisma.Decimal | null;
+  destinationLng: Prisma.Decimal | null;
   createdAt: Date;
   updatedAt: Date;
   deliveredChargeTransaction?: {
@@ -98,7 +105,13 @@ export class OrdersService {
           destination: dto.destination,
           recipientFullName: dto.recipientFullName,
           recipientPhone: dto.recipientPhone,
+          weightGrams: dto.weightGrams,
           note: dto.note ?? null,
+          collectionAmount: dto.collectionAmount != null ? new Prisma.Decimal(dto.collectionAmount) : null,
+          originLat: dto.originLat != null ? new Prisma.Decimal(dto.originLat) : null,
+          originLng: dto.originLng != null ? new Prisma.Decimal(dto.originLng) : null,
+          destinationLat: dto.destinationLat != null ? new Prisma.Decimal(dto.destinationLat) : null,
+          destinationLng: dto.destinationLng != null ? new Prisma.Decimal(dto.destinationLng) : null,
           status: OrderStatus.PENDING,
         },
         include: {
@@ -122,6 +135,55 @@ export class OrdersService {
 
       return this.mapOrder(order);
     });
+  }
+
+  async updateOrder(userId: string, orderId: string, dto: UpdateOrderDto): Promise<OrderSummary> {
+    const order = await this.findOrderByIdAndUserIdOrThrow(userId, orderId);
+
+    if (order.status !== OrderStatus.PENDING) {
+      throw new BadRequestException('Order can only be edited while pending');
+    }
+
+    const data: Prisma.OrderUpdateInput = {};
+
+    if (dto.origin !== undefined) data.origin = dto.origin;
+    if (dto.destination !== undefined) data.destination = dto.destination;
+    if (dto.recipientFullName !== undefined) data.recipientFullName = dto.recipientFullName;
+    if (dto.recipientPhone !== undefined) data.recipientPhone = dto.recipientPhone;
+    if (dto.note !== undefined) data.note = dto.note;
+    if (dto.packageType !== undefined) data.packageType = dto.packageType;
+    if (dto.weightGrams !== undefined) data.weightGrams = dto.weightGrams;
+    if (dto.collectionAmount !== undefined) data.collectionAmount = new Prisma.Decimal(dto.collectionAmount);
+    if (dto.originLat !== undefined) data.originLat = new Prisma.Decimal(dto.originLat);
+    if (dto.originLng !== undefined) data.originLng = new Prisma.Decimal(dto.originLng);
+    if (dto.destinationLat !== undefined) data.destinationLat = new Prisma.Decimal(dto.destinationLat);
+    if (dto.destinationLng !== undefined) data.destinationLng = new Prisma.Decimal(dto.destinationLng);
+
+    const updated = await this.prisma.order.update({
+      where: { id: orderId },
+      data,
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    return this.mapOrder(updated);
+  }
+
+  async deleteOrder(userId: string, orderId: string): Promise<void> {
+    const order = await this.findOrderByIdAndUserIdOrThrow(userId, orderId);
+
+    if (order.status !== OrderStatus.PENDING) {
+      throw new BadRequestException('Order can only be deleted while pending');
+    }
+
+    await this.prisma.order.delete({ where: { id: orderId } });
   }
 
   async getMyOrders(userId: string): Promise<OrderSummary[]> {
@@ -429,10 +491,16 @@ export class OrdersService {
       packageType: order.packageType,
       status: order.status,
       origin: order.origin,
+      originLat: order.originLat?.toFixed(7) ?? null,
+      originLng: order.originLng?.toFixed(7) ?? null,
       destination: order.destination,
+      destinationLat: order.destinationLat?.toFixed(7) ?? null,
+      destinationLng: order.destinationLng?.toFixed(7) ?? null,
       recipientFullName: order.recipientFullName,
       recipientPhone: order.recipientPhone,
       note: order.note,
+      weightGrams: order.weightGrams,
+      collectionAmount: order.collectionAmount?.toFixed(2) ?? null,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
       deliveredChargeTransactionId: order.deliveredChargeTransaction?.id ?? null,

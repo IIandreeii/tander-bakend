@@ -40,10 +40,16 @@ export interface OrderSummary {
   packageType: OrderPackageType;
   status: OrderStatus;
   origin: string;
+  originLat: string | null;
+  originLng: string | null;
   destination: string;
+  destinationLat: string | null;
+  destinationLng: string | null;
   recipientFullName: string;
   recipientPhone: string;
   note: string | null;
+  weightGrams: number;
+  collectionAmount: string | null;
   createdAt: Date;
   updatedAt: Date;
   deliveredChargeTransactionId: string | null;

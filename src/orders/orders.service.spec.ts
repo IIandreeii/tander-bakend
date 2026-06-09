@@ -151,11 +151,16 @@ describe('OrdersService', () => {
     await expect(
       service.createOrder('user-1', {
         origin: 'Origin',
+        originLat: -12.0464,
+        originLng: -77.0428,
         destination: 'Destination',
+        destinationLat: -12.1,
+        destinationLng: -77.05,
         recipientFullName: 'Recipient',
         recipientPhone: '123456789',
         note: 'Internal note',
         packageType: OrderPackageType.XS,
+        weightGrams: 100,
       }),
     ).rejects.toThrow('Not enough order creation capacity');
   });

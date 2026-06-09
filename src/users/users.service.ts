@@ -1,10 +1,18 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '../../generated/prisma/client';
+import { Prisma, Role } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
+
+  findAll() {
+    return this.prisma.user.findMany({
+      where: { role: { not: Role.SUPER_MASTER } },
+      select: { id: true, email: true, role: true, isEmailVerified: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 
   findByEmail(email: string) {
     return this.prisma.user.findUnique({ where: { email } });
