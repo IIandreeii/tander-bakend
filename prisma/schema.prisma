@@ -40,6 +40,22 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum AliclikSyncStatus {
+  NOT_SYNCED
+  SYNCED
+  ERROR
+}
+
+enum AliclikSyncAction {
+  QUOTE
+  CREATE
+  UPDATE
+  CONFIRM
+  RESCHEDULE
+  CANCEL
+  LOOKUP
+}
+
 model User {
   id                             String              @id @default(cuid())
   email                          String              @unique
@@ -112,6 +128,12 @@ model Order {
   originLng                   Decimal?             @db.Decimal(10, 7)
   destinationLat              Decimal?             @db.Decimal(10, 7)
   destinationLng              Decimal?             @db.Decimal(10, 7)
+  aliclikOrderNumber          String?              @unique
+  aliclikSyncStatus           AliclikSyncStatus    @default(NOT_SYNCED)
+  aliclikLastSyncAction       AliclikSyncAction?
+  aliclikLastSyncAttemptAt    DateTime?
+  aliclikSyncedAt             DateTime?
+  aliclikLastSyncError        String?
   createdAt                   DateTime             @default(now())
   updatedAt                   DateTime             @updatedAt
 

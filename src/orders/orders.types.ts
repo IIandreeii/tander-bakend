@@ -1,4 +1,5 @@
 import type { Role, OrderPackageType, OrderStatus } from '../../generated/prisma/client';
+import type { AliclikSyncAction, AliclikSyncStatus } from '../aliclik/aliclik.types';
 
 export interface OrderUserSummary {
   id: string;
@@ -50,6 +51,12 @@ export interface OrderSummary {
   note: string | null;
   weightGrams: number;
   collectionAmount: string | null;
+  aliclikOrderNumber: string | null;
+  aliclikSyncStatus: AliclikSyncStatus;
+  aliclikLastSyncAction: AliclikSyncAction | null;
+  aliclikLastSyncAttemptAt: Date | null;
+  aliclikSyncedAt: Date | null;
+  aliclikLastSyncError: string | null;
   createdAt: Date;
   updatedAt: Date;
   deliveredChargeTransactionId: string | null;

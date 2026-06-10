@@ -6,13 +6,18 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { RescheduleAliclikOrderDto } from './dto/reschedule-aliclik-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { OrdersService } from './orders.service';
+import { AliclikService } from '../aliclik/aliclik.service';
 
 @Controller('orders')
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) {}
+  constructor(
+    private readonly ordersService: OrdersService,
+    private readonly aliclikService: AliclikService,
+  ) {}
 
   @UseGuards(JwtAuthGuard)
   @Post()
@@ -48,6 +53,62 @@ export class OrdersController {
   @Get('me/:orderId/history')
   getMyOrderHistory(@CurrentUser() user: AuthenticatedUser, @Param('orderId') orderId: string) {
     return this.ordersService.getMyOrderHistory(user.id, orderId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me/:orderId/aliclik')
+  getAliclikSyncState(@CurrentUser() user: AuthenticatedUser, @Param('orderId') orderId: string) {
+    return this.aliclikService.getSyncState(user.id, orderId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me/:orderId/aliclik/quote')
+  quoteAliclikShipping(@CurrentUser() user: AuthenticatedUser, @Param('orderId') orderId: string) {
+    return this.aliclikService.quoteShipping(user.id, orderId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('me/:orderId/aliclik')
+  createAliclikOrder(@CurrentUser() user: AuthenticatedUser, @Param('orderId') orderId: string) {
+    return this.aliclikService.createOrder(user.id, orderId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('me/:orderId/aliclik')
+  updateAliclikOrder(@CurrentUser() user: AuthenticatedUser, @Param('orderId') orderId: string) {
+    return this.aliclikService.updateOrder(user.id, orderId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('me/:orderId/aliclik/confirm')
+  confirmAliclikOrder(@CurrentUser() user: AuthenticatedUser, @Param('orderId') orderId: string) {
+    return this.aliclikService.confirmOrder(user.id, orderId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('me/:orderId/aliclik/reschedule')
+  rescheduleAliclikOrder(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('orderId') orderId: string,
+    @Body() dto: RescheduleAliclikOrderDto,
+  ) {
+    return this.aliclikService.rescheduleOrder(user.id, orderId, dto.scheduleDate);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('me/:orderId/aliclik/cancel')
+  cancelAliclikOrder(@CurrentUser() user: AuthenticatedUser, @Param('orderId') orderId: string) {
+    return this.aliclikService.cancelOrder(user.id, orderId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me/:orderId/aliclik/by-number/:orderNumber')
+  getAliclikOrderByNumber(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('orderId') orderId: string,
+    @Param('orderNumber') orderNumber: string,
+  ) {
+    return this.aliclikService.getOrderByNumber(user.id, orderId, orderNumber);
   }
 
   @UseGuards(JwtAuthGuard)

@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma, OrderStatus, WalletTransactionType } from '../../generated/prisma/client';
+import { ALICLIK_SYNC_STATUS } from '../aliclik/aliclik.types';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
@@ -51,6 +52,12 @@ interface OrderRecord {
   note: string | null;
   weightGrams: number;
   collectionAmount: Prisma.Decimal | null;
+  aliclikOrderNumber: string | null;
+  aliclikSyncStatus: OrderSummary['aliclikSyncStatus'];
+  aliclikLastSyncAction: OrderSummary['aliclikLastSyncAction'];
+  aliclikLastSyncAttemptAt: Date | null;
+  aliclikSyncedAt: Date | null;
+  aliclikLastSyncError: string | null;
   originLat: Prisma.Decimal | null;
   originLng: Prisma.Decimal | null;
   destinationLat: Prisma.Decimal | null;
@@ -68,6 +75,16 @@ interface OrderHistoryRecord {
   status: OrderSummary['status'];
   createdAt: Date;
   changedByUser: OrderUserRecord;
+}
+
+function formatDecimal(value: Prisma.Decimal | null, digits: number): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const numericValue = Number(value.toString());
+
+  return Number.isFinite(numericValue) ? numericValue.toFixed(digits) : null;
 }
 
 @Injectable()
@@ -491,16 +508,22 @@ export class OrdersService {
       packageType: order.packageType,
       status: order.status,
       origin: order.origin,
-      originLat: order.originLat?.toFixed(7) ?? null,
-      originLng: order.originLng?.toFixed(7) ?? null,
+      originLat: formatDecimal(order.originLat, 7),
+      originLng: formatDecimal(order.originLng, 7),
       destination: order.destination,
-      destinationLat: order.destinationLat?.toFixed(7) ?? null,
-      destinationLng: order.destinationLng?.toFixed(7) ?? null,
+      destinationLat: formatDecimal(order.destinationLat, 7),
+      destinationLng: formatDecimal(order.destinationLng, 7),
       recipientFullName: order.recipientFullName,
       recipientPhone: order.recipientPhone,
       note: order.note,
       weightGrams: order.weightGrams,
-      collectionAmount: order.collectionAmount?.toFixed(2) ?? null,
+      collectionAmount: formatDecimal(order.collectionAmount, 2),
+      aliclikOrderNumber: order.aliclikOrderNumber ?? null,
+      aliclikSyncStatus: order.aliclikSyncStatus ?? ALICLIK_SYNC_STATUS.NOT_SYNCED,
+      aliclikLastSyncAction: order.aliclikLastSyncAction ?? null,
+      aliclikLastSyncAttemptAt: order.aliclikLastSyncAttemptAt ?? null,
+      aliclikSyncedAt: order.aliclikSyncedAt ?? null,
+      aliclikLastSyncError: order.aliclikLastSyncError ?? null,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
       deliveredChargeTransactionId: order.deliveredChargeTransaction?.id ?? null,
