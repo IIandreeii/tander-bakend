@@ -1,11 +1,13 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma, OrderStatus, WalletTransactionType } from '../../generated/prisma/client';
+import { AliclikService } from '../aliclik/aliclik.service';
 import { ALICLIK_SYNC_STATUS } from '../aliclik/aliclik.types';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -58,6 +60,9 @@ interface OrderRecord {
   aliclikLastSyncAttemptAt: Date | null;
   aliclikSyncedAt: Date | null;
   aliclikLastSyncError: string | null;
+  aliclikWebhookStatus: string | null;
+  aliclikWebhookDispatchStatus: string | null;
+  aliclikWebhookCallStatus: string | null;
   originLat: Prisma.Decimal | null;
   originLng: Prisma.Decimal | null;
   destinationLat: Prisma.Decimal | null;
@@ -89,13 +94,16 @@ function formatDecimal(value: Prisma.Decimal | null, digits: number): string | n
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    private readonly aliclikService: AliclikService,
   ) {}
 
   async createOrder(userId: string, dto: CreateOrderDto): Promise<OrderSummary> {
-    return this.prisma.$transaction(async (tx) => {
+    const created = await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT "id" FROM "wallets" WHERE "userId" = ${userId} FOR UPDATE`;
 
       const wallet = await this.findWalletByUserIdOrThrow(tx, userId);
@@ -152,6 +160,23 @@ export class OrdersService {
 
       return this.mapOrder(order);
     });
+
+    this.logger.log(`Order ${created.id} created in DB — starting Aliclik sync`);
+
+    try {
+      await this.aliclikService.createOrder(userId, created.id);
+      this.logger.log(`Order ${created.id} synced to Aliclik successfully`);
+    } catch (error) {
+      const response = typeof (error as { getResponse?: () => unknown }).getResponse === 'function'
+        ? (error as { getResponse: () => unknown }).getResponse()
+        : undefined;
+      this.logger.error(
+        `Order ${created.id} Aliclik sync failed`,
+        JSON.stringify({ message: error instanceof Error ? error.message : String(error), response }, null, 2),
+      );
+    }
+
+    return this.getMyOrder(userId, created.id);
   }
 
   async updateOrder(userId: string, orderId: string, dto: UpdateOrderDto): Promise<OrderSummary> {
@@ -272,6 +297,24 @@ export class OrdersService {
         dimensions: { ...preset.dimensions },
       })),
     };
+  }
+
+  async getOrdersWithAliclikErrors(): Promise<OrderSummary[]> {
+    const orders = await this.prisma.order.findMany({
+      where: { aliclikSyncStatus: 'ERROR' },
+      orderBy: { aliclikLastSyncAttemptAt: 'desc' },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    return orders.map((order) => this.mapOrder(order));
   }
 
   async getAdminOrders(): Promise<OrderSummary[]> {
@@ -524,6 +567,9 @@ export class OrdersService {
       aliclikLastSyncAttemptAt: order.aliclikLastSyncAttemptAt ?? null,
       aliclikSyncedAt: order.aliclikSyncedAt ?? null,
       aliclikLastSyncError: order.aliclikLastSyncError ?? null,
+      aliclikWebhookStatus: order.aliclikWebhookStatus ?? null,
+      aliclikWebhookDispatchStatus: order.aliclikWebhookDispatchStatus ?? null,
+      aliclikWebhookCallStatus: order.aliclikWebhookCallStatus ?? null,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
       deliveredChargeTransactionId: order.deliveredChargeTransaction?.id ?? null,

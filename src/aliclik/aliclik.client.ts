@@ -1,4 +1,4 @@
-import { BadGatewayException, Injectable } from '@nestjs/common';
+import { BadGatewayException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { AliclikOrderPayload, AliclikShippingQuoteResponse } from './aliclik.types';
 
@@ -11,6 +11,8 @@ interface AliclikRequestOptions {
 
 @Injectable()
 export class AliclikClient {
+  private readonly logger = new Logger(AliclikClient.name);
+
   constructor(private readonly configService: ConfigService) {}
 
   async quoteShipping(params: { warehouseId: number; lat: string; lng: string }): Promise<AliclikShippingQuoteResponse> {
@@ -69,15 +71,25 @@ export class AliclikClient {
   }
 
   private async request<T>(options: AliclikRequestOptions): Promise<T> {
-    const response = await fetch(this.buildUrl(options.path, options.query), {
+    const url = this.buildUrl(options.path, options.query);
+    const headers = this.buildHeaders(options.body !== undefined);
+    const bodyStr = options.body !== undefined ? JSON.stringify(options.body) : undefined;
+
+    this.logger.log(`→ ${options.method} ${url}`);
+    if (bodyStr) this.logger.log(`  body: ${bodyStr}`);
+
+    const response = await fetch(url, {
       method: options.method,
-      headers: this.buildHeaders(options.body !== undefined),
-      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+      headers,
+      body: bodyStr,
       signal: AbortSignal.timeout(15_000),
     });
 
     const rawBody = await response.text();
     const parsedBody = this.parseResponseBody(rawBody);
+
+    this.logger.log(`← ${response.status} ${url}`);
+    this.logger.log(`  response: ${rawBody}`);
 
     if (!response.ok) {
       throw new BadGatewayException({
@@ -92,9 +104,12 @@ export class AliclikClient {
 
   private buildHeaders(includeJsonContentType: boolean): HeadersInit {
     const token = this.configService.getOrThrow<string>('ALICLIK_TOKEN');
+    const originName = this.configService.getOrThrow<string>('ALICLIK_ORIGIN_HEADER_NAME');
+    const originValue = this.configService.getOrThrow<string>('ALICLIK_ORIGIN_EXPECTED');
 
     return {
       Authorization: `Bearer ${token}`,
+      [originName]: originValue,
       ...(includeJsonContentType ? { 'Content-Type': 'application/json' } : {}),
     };
   }

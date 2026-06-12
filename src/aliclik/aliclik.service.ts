@@ -183,6 +183,23 @@ export class AliclikService {
     return this.client.getOrderByNumber(orderNumber);
   }
 
+  async retryOrderSync(orderId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      select: { id: true, userId: true, aliclikOrderNumber: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (order.aliclikOrderNumber) {
+      return this.updateOrder(order.userId, orderId);
+    }
+
+    return this.createOrder(order.userId, orderId);
+  }
+
   private async resolveOrderPayload(
     userId: string,
     orderId: string,
@@ -202,9 +219,10 @@ export class AliclikService {
 
     const productIdentifiers = this.getProductIdentifiers();
     const warehouseId = this.getDefaultWarehouseId();
+    const transportId = this.getDefaultTransportId();
     const quote = await this.client.quoteShipping(buildQuoteRequest(order, warehouseId));
-    const selectedCourier = selectCourierOption(quote);
-    const orderNumber = linkedOrderNumber ?? buildAliclikOrderNumber(order.id);
+    const selectedCourier = selectCourierOption(quote, transportId);
+    const orderNumber = linkedOrderNumber ?? buildAliclikOrderNumber();
     const payload = buildOrderPayload({
       order,
       orderNumber,
@@ -237,6 +255,8 @@ export class AliclikService {
         note: true,
         weightGrams: true,
         collectionAmount: true,
+        originLat: true,
+        originLng: true,
         destinationLat: true,
         destinationLng: true,
         createdAt: true,
@@ -391,6 +411,20 @@ export class AliclikService {
     }
 
     return warehouseId;
+  }
+
+  private getDefaultTransportId(): number | undefined {
+    const raw = this.configService.get<string>('ALICLIK_TRANSPORT_ID');
+
+    if (!raw) return undefined;
+
+    const transportId = Number(raw);
+
+    if (!Number.isInteger(transportId) || transportId <= 0) {
+      throw new BadRequestException('ALICLIK_TRANSPORT_ID must be a positive integer');
+    }
+
+    return transportId;
   }
 
   private getProductIdentifiers(): { sku?: string; ean?: string } {

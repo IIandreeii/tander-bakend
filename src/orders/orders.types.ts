@@ -57,6 +57,9 @@ export interface OrderSummary {
   aliclikLastSyncAttemptAt: Date | null;
   aliclikSyncedAt: Date | null;
   aliclikLastSyncError: string | null;
+  aliclikWebhookStatus: string | null;
+  aliclikWebhookDispatchStatus: string | null;
+  aliclikWebhookCallStatus: string | null;
   createdAt: Date;
   updatedAt: Date;
   deliveredChargeTransactionId: string | null;

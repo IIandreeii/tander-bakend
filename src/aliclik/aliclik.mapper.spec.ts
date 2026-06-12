@@ -66,8 +66,8 @@ describe('Aliclik mapper', () => {
     ],
   };
 
-  it('builds stable Aliclik order numbers', () => {
-    expect(buildAliclikOrderNumber('order-1')).toBe('TANDER-order-1');
+  it('builds Aliclik order numbers with TANDER prefix', () => {
+    expect(buildAliclikOrderNumber()).toMatch(/^TANDER\d+$/);
   });
 
   it('selects the cheapest courier and maps the payload', () => {

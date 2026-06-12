@@ -134,6 +134,9 @@ model Order {
   aliclikLastSyncAttemptAt    DateTime?
   aliclikSyncedAt             DateTime?
   aliclikLastSyncError        String?
+  aliclikWebhookStatus        String?
+  aliclikWebhookDispatchStatus String?
+  aliclikWebhookCallStatus    String?
   createdAt                   DateTime             @default(now())
   updatedAt                   DateTime             @updatedAt
 

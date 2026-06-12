@@ -8,6 +8,7 @@ import { UsersModule } from './users/users.module';
 import { MailModule } from './mail/mail.module';
 import { WalletModule } from './wallet/wallet.module';
 import { OrdersModule } from './orders/orders.module';
+import { WebhookModule } from './webhook/webhook.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { OrdersModule } from './orders/orders.module';
     AuthModule,
     WalletModule,
     OrdersModule,
+    WebhookModule,
   ],
   controllers: [AppController],
   providers: [AppService],

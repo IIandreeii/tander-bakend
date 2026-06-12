@@ -133,6 +133,20 @@ export class OrdersController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SUPER_MASTER)
+  @Get('aliclik-errors')
+  getOrdersWithAliclikErrors() {
+    return this.ordersService.getOrdersWithAliclikErrors();
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_MASTER)
+  @Post(':orderId/aliclik/retry')
+  retryAliclikOrderSync(@Param('orderId') orderId: string) {
+    return this.aliclikService.retryOrderSync(orderId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_MASTER)
   @Get(':orderId')
   getAdminOrder(@Param('orderId') orderId: string) {
     return this.ordersService.getAdminOrder(orderId);

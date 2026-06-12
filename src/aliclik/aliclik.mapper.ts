@@ -30,8 +30,9 @@ function formatDecimal(value: { toString(): string } | null | undefined, digits:
   return Number.isFinite(numericValue) ? numericValue.toFixed(digits) : '';
 }
 
-export function buildAliclikOrderNumber(orderId: string): string {
-  return `${ALICLIK_ORDER_PREFIX}-${orderId}`;
+export function buildAliclikOrderNumber(): string {
+  const rand = Math.floor(Math.random() * 9000 + 1000);
+  return `${ALICLIK_ORDER_PREFIX}${Date.now()}${rand}`;
 }
 
 export function buildQuoteRequest(order: AliclikOrderRecord, warehouseId: number): AliclikQuoteRequest {
@@ -42,9 +43,21 @@ export function buildQuoteRequest(order: AliclikOrderRecord, warehouseId: number
   };
 }
 
-export function selectCourierOption(quote: AliclikShippingQuoteResponse): AliclikSelectedCourier {
+export function selectCourierOption(quote: AliclikShippingQuoteResponse, preferredTransportId?: number): AliclikSelectedCourier {
   if (quote.couriers.length === 0) {
     throw new BadRequestException('Aliclik returned no courier options');
+  }
+
+  if (preferredTransportId !== undefined) {
+    const preferred = quote.couriers.find((c) => c.transportId === preferredTransportId);
+
+    if (!preferred) {
+      throw new BadRequestException(
+        `Aliclik courier with transportId ${preferredTransportId} not available for this destination`,
+      );
+    }
+
+    return preferred;
   }
 
   return [...quote.couriers].sort((left, right) => {
@@ -84,9 +97,14 @@ export function buildOrderPayload(params: {
     user: order.user.email,
     orderNumber,
     total,
+    note: [
+      order.note,
+      `Origen: ${order.origin} (${formatDecimal(order.originLat, 7)}, ${formatDecimal(order.originLng, 7)})`,
+    ].filter(Boolean).join(' | '),
     channel: 'TANDER',
     createdAtEmidica: order.createdAt.toISOString(),
     delivery: selectedCourier.deliveryCost,
+    currency: { code: 'PEN', symbol: 'S/' },
     customer: {
       name: order.recipientFullName,
       phone: order.recipientPhone,
@@ -94,6 +112,7 @@ export function buildOrderPayload(params: {
     },
     shipping: {
       address1: order.destination,
+      address2: order.origin,
       lat: formatDecimal(order.destinationLat, 7),
       lng: formatDecimal(order.destinationLng, 7),
     },
