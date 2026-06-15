@@ -31,7 +31,8 @@ async function bootstrap() {
       'http://localhost:5173',
       'https://aliclik.app',
       'https://api.aliclik-dev.com',
-      'https://tander.web.app'
+      'https://tander.web.app',
+      'https://tanders.app',
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
