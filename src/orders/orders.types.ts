@@ -60,6 +60,7 @@ export interface OrderSummary {
   aliclikWebhookStatus: string | null;
   aliclikWebhookDispatchStatus: string | null;
   aliclikWebhookCallStatus: string | null;
+  labelGeneratedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
   deliveredChargeTransactionId: string | null;

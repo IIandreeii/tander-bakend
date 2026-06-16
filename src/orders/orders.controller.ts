@@ -124,6 +124,17 @@ export class OrdersController {
     return this.ordersService.deleteOrder(user.id, orderId);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(204)
+  @Patch('me/:orderId/label')
+  markLabelGenerated(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('orderId') orderId: string,
+    @Body('generated') generated: boolean,
+  ) {
+    return this.ordersService.markLabelGenerated(user.id, orderId, generated);
+  }
+
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SUPER_MASTER)
   @Get()

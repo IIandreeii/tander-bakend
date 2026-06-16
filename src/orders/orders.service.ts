@@ -63,6 +63,7 @@ interface OrderRecord {
   aliclikWebhookStatus: string | null;
   aliclikWebhookDispatchStatus: string | null;
   aliclikWebhookCallStatus: string | null;
+  labelGeneratedAt: Date | null;
   originLat: Prisma.Decimal | null;
   originLng: Prisma.Decimal | null;
   destinationLat: Prisma.Decimal | null;
@@ -246,6 +247,14 @@ export class OrdersService {
     }
 
     await this.prisma.order.delete({ where: { id: orderId } });
+  }
+
+  async markLabelGenerated(userId: string, orderId: string, generated: boolean): Promise<void> {
+    await this.findOrderByIdAndUserIdOrThrow(userId, orderId);
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: { labelGeneratedAt: generated ? new Date() : null },
+    });
   }
 
   async getMyOrders(userId: string): Promise<OrderSummary[]> {
@@ -612,6 +621,7 @@ export class OrdersService {
       aliclikWebhookStatus: order.aliclikWebhookStatus ?? null,
       aliclikWebhookDispatchStatus: order.aliclikWebhookDispatchStatus ?? null,
       aliclikWebhookCallStatus: order.aliclikWebhookCallStatus ?? null,
+      labelGeneratedAt: order.labelGeneratedAt ?? null,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
       deliveredChargeTransactionId: order.deliveredChargeTransaction?.id ?? null,
