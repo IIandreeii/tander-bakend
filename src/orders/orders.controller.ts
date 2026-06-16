@@ -154,6 +154,13 @@ export class OrdersController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SUPER_MASTER)
+  @Get(':orderId/history')
+  getAdminOrderHistory(@Param('orderId') orderId: string) {
+    return this.ordersService.getAdminOrderHistory(orderId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_MASTER)
   @Patch(':orderId/status')
   updateOrderStatus(
     @Param('orderId') orderId: string,

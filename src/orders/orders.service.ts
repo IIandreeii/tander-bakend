@@ -340,6 +340,28 @@ export class OrdersService {
     return this.mapOrder(order);
   }
 
+  async getAdminOrderHistory(orderId: string): Promise<OrderHistoryResponse> {
+    const order = await this.findOrderByIdOrThrow(orderId);
+    const history = await this.prisma.orderStatusHistory.findMany({
+      where: { orderId },
+      orderBy: { createdAt: 'asc' },
+      include: {
+        changedByUser: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    return {
+      order: this.mapOrder(order),
+      history: history.map((item) => this.mapHistoryItem(item)),
+    };
+  }
+
   async updateOrderStatus(
     orderId: string,
     dto: UpdateOrderStatusDto,
