@@ -42,15 +42,30 @@ export class UsersService {
         paymentMethod: true,
         bank: true,
         bankAccountNumber: true,
+        defaultOrigin: true,
+        defaultOriginLat: true,
+        defaultOriginLng: true,
         createdAt: true,
       },
     });
   }
 
-  updateProfile(userId: string, data: { paymentPhone?: string; paymentMethod?: string; bank?: string; bankAccountNumber?: string }) {
+  updateProfile(userId: string, data: {
+    paymentPhone?: string;
+    paymentMethod?: string;
+    bank?: string;
+    bankAccountNumber?: string;
+    defaultOrigin?: string;
+    defaultOriginLat?: number;
+    defaultOriginLng?: number;
+  }) {
     return this.prisma.user.update({
       where: { id: userId },
-      data,
+      data: {
+        ...data,
+        defaultOriginLat: data.defaultOriginLat !== undefined ? new Prisma.Decimal(data.defaultOriginLat) : undefined,
+        defaultOriginLng: data.defaultOriginLng !== undefined ? new Prisma.Decimal(data.defaultOriginLng) : undefined,
+      },
       select: {
         id: true,
         email: true,
@@ -60,6 +75,9 @@ export class UsersService {
         paymentMethod: true,
         bank: true,
         bankAccountNumber: true,
+        defaultOrigin: true,
+        defaultOriginLat: true,
+        defaultOriginLng: true,
         createdAt: true,
       },
     });

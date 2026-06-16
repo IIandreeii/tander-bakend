@@ -236,6 +236,19 @@ export class OrdersService {
       },
     });
 
+    if (order.aliclikOrderNumber) {
+      this.logger.log(`Order ${orderId} updated in DB — starting Aliclik sync`);
+      try {
+        await this.aliclikService.updateOrder(userId, orderId);
+        this.logger.log(`Order ${orderId} re-synced to Aliclik successfully`);
+      } catch (error) {
+        this.logger.error(
+          `Order ${orderId} Aliclik re-sync failed`,
+          JSON.stringify({ message: error instanceof Error ? error.message : String(error) }, null, 2),
+        );
+      }
+    }
+
     return this.mapOrder(updated);
   }
 

@@ -74,6 +74,9 @@ model User {
   paymentMethod                  String?
   bank                           String?
   bankAccountNumber              String?
+  defaultOrigin                  String?
+  defaultOriginLat               Decimal?
+  defaultOriginLng               Decimal?
 
   wallet                         Wallet?
   walletTransactionsPerformed    WalletTransaction[] @relation("WalletTransactionActor")

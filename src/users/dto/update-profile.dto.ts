@@ -1,4 +1,4 @@
-import { IsIn, IsOptional, IsString, Matches } from 'class-validator';
+import { IsIn, IsNumber, IsOptional, IsString, Matches } from 'class-validator';
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -17,4 +17,16 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsString()
   bankAccountNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  defaultOrigin?: string;
+
+  @IsOptional()
+  @IsNumber()
+  defaultOriginLat?: number;
+
+  @IsOptional()
+  @IsNumber()
+  defaultOriginLng?: number;
 }
