@@ -9,4 +9,12 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsIn(['YAPE', 'PLIN'])
   paymentMethod?: string;
+
+  @IsOptional()
+  @IsIn(['BCP'])
+  bank?: string;
+
+  @IsOptional()
+  @IsString()
+  bankAccountNumber?: string;
 }

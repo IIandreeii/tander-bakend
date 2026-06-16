@@ -40,12 +40,14 @@ export class UsersService {
         isEmailVerified: true,
         paymentPhone: true,
         paymentMethod: true,
+        bank: true,
+        bankAccountNumber: true,
         createdAt: true,
       },
     });
   }
 
-  updateProfile(userId: string, data: { paymentPhone?: string; paymentMethod?: string }) {
+  updateProfile(userId: string, data: { paymentPhone?: string; paymentMethod?: string; bank?: string; bankAccountNumber?: string }) {
     return this.prisma.user.update({
       where: { id: userId },
       data,
@@ -56,6 +58,8 @@ export class UsersService {
         isEmailVerified: true,
         paymentPhone: true,
         paymentMethod: true,
+        bank: true,
+        bankAccountNumber: true,
         createdAt: true,
       },
     });

@@ -72,6 +72,8 @@ model User {
   updatedAt                      DateTime            @updatedAt
   paymentPhone                   String?
   paymentMethod                  String?
+  bank                           String?
+  bankAccountNumber              String?
 
   wallet                         Wallet?
   walletTransactionsPerformed    WalletTransaction[] @relation("WalletTransactionActor")

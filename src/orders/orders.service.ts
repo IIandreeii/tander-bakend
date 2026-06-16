@@ -102,7 +102,27 @@ export class OrdersService {
     private readonly aliclikService: AliclikService,
   ) {}
 
+  private buildPaymentNote(user: { paymentPhone: string | null; paymentMethod: string | null; bank: string | null; bankAccountNumber: string | null } | null): string {
+    const lines: string[] = [];
+    if (user?.paymentMethod && user?.paymentPhone) {
+      const label = user.paymentMethod === 'YAPE' ? 'Yape' : 'Plin';
+      lines.push(`${label}: ${user.paymentPhone}`);
+    }
+    if (user?.bank && user?.bankAccountNumber) {
+      lines.push(`${user.bank} Cta: ${user.bankAccountNumber}`);
+    }
+    if (lines.length === 0) return '';
+    return '\n\nDatos de cobro:\n' + lines.map((l) => `• ${l}`).join('\n');
+  }
+
   async createOrder(userId: string, dto: CreateOrderDto): Promise<OrderSummary> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { paymentPhone: true, paymentMethod: true, bank: true, bankAccountNumber: true },
+    });
+    const paymentNote = this.buildPaymentNote(user);
+    const finalNote = dto.note ? dto.note + paymentNote : (paymentNote || null);
+
     const created = await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT "id" FROM "wallets" WHERE "userId" = ${userId} FOR UPDATE`;
 
@@ -131,7 +151,7 @@ export class OrdersService {
           recipientFullName: dto.recipientFullName,
           recipientPhone: dto.recipientPhone,
           weightGrams: dto.weightGrams,
-          note: dto.note ?? null,
+          note: finalNote,
           collectionAmount: dto.collectionAmount != null ? new Prisma.Decimal(dto.collectionAmount) : null,
           originLat: dto.originLat != null ? new Prisma.Decimal(dto.originLat) : null,
           originLng: dto.originLng != null ? new Prisma.Decimal(dto.originLng) : null,
