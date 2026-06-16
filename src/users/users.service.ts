@@ -29,4 +29,35 @@ export class UsersService {
   update(id: string, data: Prisma.UserUpdateInput) {
     return this.prisma.user.update({ where: { id }, data });
   }
+
+  getProfile(userId: string) {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        isEmailVerified: true,
+        paymentPhone: true,
+        paymentMethod: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  updateProfile(userId: string, data: { paymentPhone?: string; paymentMethod?: string }) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data,
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        isEmailVerified: true,
+        paymentPhone: true,
+        paymentMethod: true,
+        createdAt: true,
+      },
+    });
+  }
 }

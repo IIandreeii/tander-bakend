@@ -70,6 +70,8 @@ model User {
   passwordResetCodeExpiresAt     DateTime?
   createdAt                      DateTime            @default(now())
   updatedAt                      DateTime            @updatedAt
+  paymentPhone                   String?
+  paymentMethod                  String?
 
   wallet                         Wallet?
   walletTransactionsPerformed    WalletTransaction[] @relation("WalletTransactionActor")
