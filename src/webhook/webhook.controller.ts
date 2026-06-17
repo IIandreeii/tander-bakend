@@ -14,37 +14,44 @@ interface AliclikWebhookPayload {
 function mapAliclikStatusToTander(payload: AliclikWebhookPayload): OrderStatus | null {
   const { status, dispatchStatus, callStatus } = payload;
 
+  // dispatchStatus LEFT_IN_WAREHOUSE → devuelto (terminal)
+  if (dispatchStatus === 'LEFT_IN_WAREHOUSE') {
+    return OrderStatus.RETURNED;
+  }
+
+  // status DELIVERED → entregado (terminal)
   if (status === 'DELIVERED') {
     return OrderStatus.DELIVERED;
   }
 
-  if (
-    callStatus === 'ANNULLED' ||
-    dispatchStatus === 'CANCEL' ||
-    dispatchStatus === 'ANNULLED' ||
-    dispatchStatus === 'REFUSED' ||
-    dispatchStatus === 'TO_RETURN' ||
-    dispatchStatus === 'RETURNED'
-  ) {
-    return OrderStatus.CANCELLED;
+  // status distinto de DELIVERED y terminal → en devolución
+  if (['REFUSED', 'NOT_RESPOND', 'CANCEL', 'ANNULLED', 'TRAVEL', 'OUT_OF_COVER', 'OUT_OF_STOCK', 'NOT_DISPATCH', 'NOT_COST'].includes(status)) {
+    return OrderStatus.RETURNING;
   }
 
-  if (
-    status === 'IN_TRANSIT' ||
-    status === 'PENDING_DELIVERY' ||
-    dispatchStatus === 'IN_TRANSIT' ||
-    dispatchStatus === 'IN_AGENCY' ||
-    dispatchStatus === 'PICKED'
-  ) {
-    return OrderStatus.SHIPPED;
+  // callStatus ANNULLED → en devolución
+  if (callStatus === 'ANNULLED') {
+    return OrderStatus.RETURNING;
   }
 
-  if (
-    dispatchStatus === 'TO_PREPARE' ||
-    dispatchStatus === 'PREPARED' ||
-    dispatchStatus === 'CONFIRMED'
-  ) {
-    return OrderStatus.PROCESSING;
+  // dispatchStatus TO_RETURN, RETURNED, REMAINING_IN_TRANSIT, STORE_CENTRAL → en devolución
+  if (['TO_RETURN', 'RETURNED', 'REMAINING_IN_TRANSIT', 'STORE_CENTRAL'].includes(dispatchStatus)) {
+    return OrderStatus.RETURNING;
+  }
+
+  // dispatchStatus AVAILABLE → en ruta
+  if (dispatchStatus === 'AVAILABLE') {
+    return OrderStatus.IN_TRANSIT;
+  }
+
+  // dispatchStatus PICKED, IN_TRANSIT, IN_AGENCY → recolectado
+  if (['PICKED', 'IN_TRANSIT', 'IN_AGENCY'].includes(dispatchStatus)) {
+    return OrderStatus.PICKED;
+  }
+
+  // dispatchStatus TO_PREPARE, PREPARED → pendiente
+  if (['TO_PREPARE', 'PREPARED'].includes(dispatchStatus)) {
+    return OrderStatus.PENDING;
   }
 
   return null;

@@ -52,26 +52,26 @@ export const ORDER_PACKAGE_PRESETS: readonly {
 
 export const ORDER_ACTIVE_STATUSES: readonly OrderStatus[] = [
   OrderStatus.PENDING,
-  OrderStatus.PROCESSING,
-  OrderStatus.SHIPPED,
+  OrderStatus.PICKED,
+  OrderStatus.IN_TRANSIT,
 ];
 
 export const ORDER_TERMINAL_STATUSES: readonly OrderStatus[] = [
   OrderStatus.DELIVERED,
-  OrderStatus.CANCELLED,
+  OrderStatus.RETURNED,
 ];
 
-export const ORDER_STATUS_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
-  [OrderStatus.PENDING]: [
-    OrderStatus.PROCESSING,
-    OrderStatus.SHIPPED,
-    OrderStatus.CANCELLED,
-    OrderStatus.DELIVERED,
-  ],
-  [OrderStatus.PROCESSING]: [OrderStatus.SHIPPED, OrderStatus.CANCELLED, OrderStatus.DELIVERED],
-  [OrderStatus.SHIPPED]: [OrderStatus.DELIVERED, OrderStatus.CANCELLED],
+export const ORDER_STATUS_TRANSITIONS: Record<string, readonly OrderStatus[]> = {
+  [OrderStatus.PENDING]: [OrderStatus.PICKED, OrderStatus.IN_TRANSIT, OrderStatus.DELIVERED, OrderStatus.RETURNING],
+  [OrderStatus.PICKED]: [OrderStatus.IN_TRANSIT, OrderStatus.DELIVERED, OrderStatus.RETURNING],
+  [OrderStatus.IN_TRANSIT]: [OrderStatus.DELIVERED, OrderStatus.RETURNING],
   [OrderStatus.DELIVERED]: [],
-  [OrderStatus.CANCELLED]: [],
+  [OrderStatus.RETURNING]: [OrderStatus.RETURNED],
+  [OrderStatus.RETURNED]: [],
+  // Legacy values — allow transitions out
+  [OrderStatus.PROCESSING]: [OrderStatus.PENDING, OrderStatus.PICKED, OrderStatus.IN_TRANSIT, OrderStatus.DELIVERED, OrderStatus.RETURNING],
+  [OrderStatus.SHIPPED]: [OrderStatus.PICKED, OrderStatus.IN_TRANSIT, OrderStatus.DELIVERED, OrderStatus.RETURNING],
+  [OrderStatus.CANCELLED]: [OrderStatus.RETURNING, OrderStatus.RETURNED],
 };
 
 export const ORDER_DELIVERED_CHARGE_REASON = 'Order delivered charge';

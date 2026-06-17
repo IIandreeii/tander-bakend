@@ -38,6 +38,10 @@ enum OrderStatus {
   SHIPPED
   DELIVERED
   CANCELLED
+  PICKED
+  IN_TRANSIT
+  RETURNING
+  RETURNED
 }
 
 enum AliclikSyncStatus {
