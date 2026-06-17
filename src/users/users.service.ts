@@ -136,9 +136,15 @@ export class UsersService {
 
     this.logger.log(`Creating Aliclik user for ${user.email}`);
 
+    const originName = this.configService.getOrThrow<string>('ALICLIK_ORIGIN_HEADER_NAME');
+    const originValue = this.configService.getOrThrow<string>('ALICLIK_ORIGIN_EXPECTED');
+
     const response = await fetch(`${baseUrl}/user`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        [originName]: originValue,
+      },
       body: JSON.stringify(payload),
       signal: AbortSignal.timeout(15_000),
     });
