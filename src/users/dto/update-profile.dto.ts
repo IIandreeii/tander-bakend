@@ -20,6 +20,11 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @IsString()
+  @Matches(/^\d{9,15}$/, { message: 'supportPhone must be 9–15 digits' })
+  supportPhone?: string;
+
+  @IsOptional()
+  @IsString()
   defaultOrigin?: string;
 
   @IsOptional()

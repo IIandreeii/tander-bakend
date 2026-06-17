@@ -1,10 +1,27 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Prisma, Role } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
+const ALICLIK_USER_DEFAULTS = {
+  companyId: 62235,
+  roleId: 1,
+  roleName: 'ADMIN_STORE',
+  countryPhoneId: 16,
+  isOwnerStore: false,
+  markerIcon: {},
+  status: 'ACTIVE',
+  password: 'TANDER2026$',
+} as const;
+
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(UsersService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {}
 
   findAll() {
     return this.prisma.user.findMany({
@@ -42,6 +59,7 @@ export class UsersService {
         paymentMethod: true,
         bank: true,
         bankAccountNumber: true,
+        supportPhone: true,
         defaultOrigin: true,
         defaultOriginLat: true,
         defaultOriginLng: true,
@@ -50,36 +68,92 @@ export class UsersService {
     });
   }
 
-  updateProfile(userId: string, data: {
+  async updateProfile(userId: string, data: {
     paymentPhone?: string;
     paymentMethod?: string;
     bank?: string;
     bankAccountNumber?: string;
+    supportPhone?: string;
     defaultOrigin?: string;
     defaultOriginLat?: number;
     defaultOriginLng?: number;
   }) {
-    return this.prisma.user.update({
+    const profileSelect = {
+      id: true,
+      email: true,
+      role: true,
+      isEmailVerified: true,
+      paymentPhone: true,
+      paymentMethod: true,
+      bank: true,
+      bankAccountNumber: true,
+      supportPhone: true,
+      aliclikUserCreated: true,
+      defaultOrigin: true,
+      defaultOriginLat: true,
+      defaultOriginLng: true,
+      createdAt: true,
+    } as const;
+
+    const updated = await this.prisma.user.update({
       where: { id: userId },
       data: {
         ...data,
         defaultOriginLat: data.defaultOriginLat !== undefined ? new Prisma.Decimal(data.defaultOriginLat) : undefined,
         defaultOriginLng: data.defaultOriginLng !== undefined ? new Prisma.Decimal(data.defaultOriginLng) : undefined,
       },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        isEmailVerified: true,
-        paymentPhone: true,
-        paymentMethod: true,
-        bank: true,
-        bankAccountNumber: true,
-        defaultOrigin: true,
-        defaultOriginLat: true,
-        defaultOriginLng: true,
-        createdAt: true,
-      },
+      select: profileSelect,
     });
+
+    if (!updated.aliclikUserCreated && this.isProfileComplete(updated)) {
+      this.syncAliclikUser(updated).catch(() => {});
+    }
+
+    const { aliclikUserCreated: _, ...profile } = updated;
+    return profile;
+  }
+
+  private isProfileComplete(user: {
+    supportPhone: string | null;
+    paymentPhone: string | null;
+    paymentMethod: string | null;
+    defaultOrigin: string | null;
+  }): boolean {
+    return !!(user.supportPhone && user.paymentPhone && user.paymentMethod && user.defaultOrigin);
+  }
+
+  private async syncAliclikUser(user: { id: string; email: string; supportPhone: string | null }) {
+    const baseUrl = this.configService.get<string>('ALICLIK_USER_API_URL')
+      ?? 'https://aliclik-api-release-f6985904c9e2.herokuapp.com';
+
+    const payload = {
+      ...ALICLIK_USER_DEFAULTS,
+      email: user.email,
+      fullname: user.email,
+      userMail: user.email,
+      phone: user.supportPhone,
+    };
+
+    this.logger.log(`Creating Aliclik user for ${user.email}`);
+
+    const response = await fetch(`${baseUrl}/user`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(15_000),
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      this.logger.error(`Aliclik user creation failed for ${user.email}: ${body}`);
+      return;
+    }
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { aliclikUserCreated: true },
+    });
+
+    this.logger.log(`Aliclik user created for ${user.email}`);
   }
 }

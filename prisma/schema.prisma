@@ -74,6 +74,8 @@ model User {
   paymentMethod                  String?
   bank                           String?
   bankAccountNumber              String?
+  supportPhone                   String?
+  aliclikUserCreated             Boolean             @default(false)
   defaultOrigin                  String?
   defaultOriginLat               Decimal?
   defaultOriginLng               Decimal?
