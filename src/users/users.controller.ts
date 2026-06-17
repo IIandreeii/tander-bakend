@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Logger, Patch, Req, UseGuards } from '@nestjs/common';
 import { Role } from '../../generated/prisma/client';
 import type { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -10,6 +10,8 @@ import { UsersService } from './users.service';
 
 @Controller('users')
 export class UsersController {
+  private readonly logger = new Logger(UsersController.name);
+
   constructor(private readonly usersService: UsersService) {}
 
   @UseGuards(JwtAuthGuard)
@@ -20,7 +22,8 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard)
   @Patch('profile')
-  updateProfile(@CurrentUser() user: AuthenticatedUser, @Body() dto: UpdateProfileDto) {
+  updateProfile(@CurrentUser() user: AuthenticatedUser, @Body() dto: UpdateProfileDto, @Req() req: any) {
+    this.logger.log(`PATCH profile userId=${user.id} rawBody=${JSON.stringify(req.body)} validatedDto=${JSON.stringify(dto)}`);
     return this.usersService.updateProfile(user.id, dto);
   }
 

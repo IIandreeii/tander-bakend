@@ -1,8 +1,9 @@
-import { IsIn, IsNumber, IsOptional, IsString, Matches } from 'class-validator';
+import { IsIn, IsNumber, IsOptional, IsString, ValidateIf, Matches } from 'class-validator';
 
 export class UpdateProfileDto {
   @IsOptional()
   @IsString()
+  @ValidateIf((o) => o.paymentPhone !== '')
   @Matches(/^\d{9,15}$/, { message: 'paymentPhone must be 9–15 digits' })
   paymentPhone?: string;
 
@@ -20,6 +21,7 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @IsString()
+  @ValidateIf((o) => o.supportPhone !== '')
   @Matches(/^\d{9,15}$/, { message: 'supportPhone must be 9–15 digits' })
   supportPhone?: string;
 
