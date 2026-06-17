@@ -30,10 +30,12 @@ export class UpdateProfileDto {
   defaultOrigin?: string;
 
   @IsOptional()
+  @ValidateIf((o) => o.defaultOriginLat !== undefined && o.defaultOriginLat !== null)
   @IsNumber()
   defaultOriginLat?: number;
 
   @IsOptional()
+  @ValidateIf((o) => o.defaultOriginLng !== undefined && o.defaultOriginLng !== null)
   @IsNumber()
   defaultOriginLng?: number;
 }
