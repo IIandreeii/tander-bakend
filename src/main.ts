@@ -13,7 +13,7 @@ async function bootstrap() {
     const { method, originalUrl, headers } = req;
     const start = Date.now();
 
-    requestLogger.log(`→ ${method} ${originalUrl} | origin: ${headers.origin ?? '-'} | ip: ${req.ip}`);
+    requestLogger.log(`→ ${method} ${originalUrl} | origin: ${headers.origin ?? '-'} | ip: ${req.ip}${method === 'PATCH' || method === 'POST' ? ` | body: ${JSON.stringify(req.body)}` : ''}`);
 
     res.on('finish', () => {
       const ms = Date.now() - start;
