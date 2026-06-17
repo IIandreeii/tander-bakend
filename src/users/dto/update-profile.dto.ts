@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import { IsIn, IsNumber, IsOptional, IsString, ValidateIf, Matches } from 'class-validator';
 
 export class UpdateProfileDto {
@@ -30,12 +31,12 @@ export class UpdateProfileDto {
   defaultOrigin?: string;
 
   @IsOptional()
-  @ValidateIf((o) => o.defaultOriginLat !== undefined && o.defaultOriginLat !== null)
+  @Type(() => Number)
   @IsNumber()
   defaultOriginLat?: number;
 
   @IsOptional()
-  @ValidateIf((o) => o.defaultOriginLng !== undefined && o.defaultOriginLng !== null)
+  @Type(() => Number)
   @IsNumber()
   defaultOriginLng?: number;
 }
