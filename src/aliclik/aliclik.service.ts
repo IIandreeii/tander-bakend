@@ -130,6 +130,28 @@ export class AliclikService {
     }
   }
 
+  async prepareOrder(userId: string, orderId: string) {
+    const order = await this.findOrderByIdAndUserIdOrThrow(userId, orderId);
+    const aliclikOrderNumber = this.requireLinkedOrderNumber(order);
+
+    try {
+      const externalOrder = await this.client.prepareOrder(aliclikOrderNumber);
+
+      await this.persistSyncSuccess(order.id, ALICLIK_SYNC_ACTION.UPDATE, aliclikOrderNumber);
+
+      return this.buildSyncResult(
+        'Aliclik order prepared successfully',
+        order.id,
+        ALICLIK_SYNC_ACTION.UPDATE,
+        aliclikOrderNumber,
+        externalOrder,
+      );
+    } catch (error) {
+      await this.persistSyncFailure(order.id, ALICLIK_SYNC_ACTION.UPDATE, error);
+      throw error;
+    }
+  }
+
   async rescheduleOrder(userId: string, orderId: string, scheduleDate: string) {
     if (!scheduleDate) {
       throw new BadRequestException('scheduleDate is required');

@@ -263,11 +263,24 @@ export class OrdersService {
   }
 
   async markLabelGenerated(userId: string, orderId: string, generated: boolean): Promise<void> {
-    await this.findOrderByIdAndUserIdOrThrow(userId, orderId);
+    const order = await this.findOrderByIdAndUserIdOrThrow(userId, orderId);
     await this.prisma.order.update({
       where: { id: orderId },
       data: { labelGeneratedAt: generated ? new Date() : null },
     });
+
+    if (generated && order.aliclikOrderNumber) {
+      this.logger.log(`Order ${orderId} label generated — preparing in Aliclik`);
+      try {
+        await this.aliclikService.prepareOrder(userId, orderId);
+        this.logger.log(`Order ${orderId} marked as prepared in Aliclik`);
+      } catch (error) {
+        this.logger.error(
+          `Order ${orderId} Aliclik prepare failed`,
+          JSON.stringify({ message: error instanceof Error ? error.message : String(error) }, null, 2),
+        );
+      }
+    }
   }
 
   async getMyOrders(userId: string): Promise<OrderSummary[]> {

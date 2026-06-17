@@ -47,6 +47,14 @@ export class AliclikClient {
     });
   }
 
+  async prepareOrder(orderNumber: string): Promise<unknown> {
+    return this.request<unknown>({
+      method: 'POST',
+      path: '/external/integration/order/prepare',
+      body: { orderNumber },
+    });
+  }
+
   async rescheduleOrder(orderNumber: string, scheduleDate: string): Promise<unknown> {
     return this.request<unknown>({
       method: 'POST',
