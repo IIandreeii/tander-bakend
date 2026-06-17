@@ -3,6 +3,7 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import type { Request, Response, NextFunction } from 'express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { ValidationExceptionFilter } from './common/filters/validation-exception.filter';
 
 const requestLogger = new Logger('HTTP');
 
@@ -44,6 +45,7 @@ async function bootstrap() {
       transform: true,
     }),
   );
+  app.useGlobalFilters(new ValidationExceptionFilter());
   const config = new DocumentBuilder()
     .setTitle('Tander API')
     .setVersion('1.0')
