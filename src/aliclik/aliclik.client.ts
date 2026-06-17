@@ -34,7 +34,7 @@ export class AliclikClient {
   async updateOrder(payload: AliclikOrderPayload): Promise<unknown> {
     return this.request<unknown>({
       method: 'POST',
-      path: '/integration/order/update',
+      path: '/external/integration/order/update',
       body: payload,
     });
   }
