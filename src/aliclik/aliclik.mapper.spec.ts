@@ -84,9 +84,11 @@ describe('Aliclik mapper', () => {
     });
 
     expect(payload.orderNumber).toBe('TANDER-order-1');
+    expect(payload.total).toBe(0);
     expect(payload.delivery).toBe(12);
     expect(payload.customer.address).toBe('Destination');
     expect(payload.shipping.lat).toBe('-12.0464000');
+    expect(payload.note).toContain('Monto total: 0');
     expect(payload.products).toHaveLength(1);
     expect(payload.products[0]).toMatchObject({
       sku: 'SKU-123',
@@ -95,5 +97,22 @@ describe('Aliclik mapper', () => {
       price: 0,
     });
     expect(payload.courier.transportId).toBe(10);
+  });
+
+  it('sends collection amount in note while keeping Aliclik total at zero', () => {
+    const selectedCourier = selectCourierOption(quote);
+
+    const payload = buildOrderPayload({
+      order: {
+        ...order,
+        collectionAmount: { toNumber: () => 125 },
+      } as unknown as AliclikOrderRecord,
+      orderNumber: 'TANDER-order-2',
+      selectedCourier,
+    });
+
+    expect(payload.total).toBe(0);
+    expect(payload.products[0]?.price).toBe(0);
+    expect(payload.note).toContain('Monto total: 125');
   });
 });

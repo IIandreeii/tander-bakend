@@ -79,7 +79,8 @@ export function buildOrderPayload(params: {
   productEan?: string;
 }): AliclikOrderPayload {
   const { order, orderNumber, selectedCourier, productSku, productEan } = params;
-  const total = order.collectionAmount?.toNumber() ?? 0;
+  const collectionAmount = order.collectionAmount?.toNumber() ?? 0;
+  const total = 0;
   const product: AliclikOrderPayload['products'][number] = {
     quantity: 1,
     price: total,
@@ -99,6 +100,7 @@ export function buildOrderPayload(params: {
     total,
     note: [
       order.note,
+      `Monto total: ${collectionAmount}`,
       `Origen: ${order.origin} (${formatDecimal(order.originLat, 7)}, ${formatDecimal(order.originLng, 7)})`,
     ].filter(Boolean).join(' | '),
     channel: 'TANDER',
