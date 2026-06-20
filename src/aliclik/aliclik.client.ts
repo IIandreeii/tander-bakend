@@ -90,7 +90,7 @@ export class AliclikClient {
       method: options.method,
       headers,
       body: bodyStr,
-      signal: AbortSignal.timeout(15_000),
+      signal: AbortSignal.timeout(30_000),
     });
 
     const rawBody = await response.text();
