@@ -102,6 +102,8 @@ export function buildOrderPayload(params: {
       order.note,
       `Monto total: ${collectionAmount}`,
       `Origen: ${order.origin} (${formatDecimal(order.originLat, 7)}, ${formatDecimal(order.originLng, 7)})`,
+      `Usuario: ${order.user.email}`,
+      order.user.supportPhone ? `Soporte: ${order.user.supportPhone}` : null,
     ].filter(Boolean).join(' | '),
     channel: 'TANDER',
     createdAtEmidica: order.createdAt.toISOString(),

@@ -121,6 +121,7 @@ export interface AliclikOrderPayload {
 export interface AliclikOrderUserRecord {
   id: string;
   email: string;
+  supportPhone: string | null;
 }
 
 export interface AliclikOrderRecord {

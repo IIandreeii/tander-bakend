@@ -293,6 +293,7 @@ export class AliclikService {
           select: {
             id: true,
             email: true,
+            supportPhone: true,
           },
         },
       },
