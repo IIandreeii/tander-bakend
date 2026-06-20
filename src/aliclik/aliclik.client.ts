@@ -26,7 +26,7 @@ export class AliclikClient {
   async createOrder(payload: AliclikOrderPayload): Promise<unknown> {
     return this.request<unknown>({
       method: 'POST',
-      path: '/integration/order',
+      path: '/external/integration/order',
       body: payload,
     });
   }
