@@ -78,6 +78,8 @@ model User {
   paymentMethod                  String?
   bank                           String?
   bankAccountNumber              String?
+  bankHolderName                 String?
+  yapeHolderName                 String?
   supportPhone                   String?
   aliclikUserCreated             Boolean             @default(false)
   defaultOrigin                  String?

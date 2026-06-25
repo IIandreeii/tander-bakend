@@ -22,6 +22,14 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @IsString()
+  bankHolderName?: string;
+
+  @IsOptional()
+  @IsString()
+  yapeHolderName?: string;
+
+  @IsOptional()
+  @IsString()
   @ValidateIf((o) => o.supportPhone !== '')
   @Matches(/^\d{9,15}$/, { message: 'supportPhone must be 9–15 digits' })
   supportPhone?: string;

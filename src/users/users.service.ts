@@ -59,6 +59,8 @@ export class UsersService {
         paymentMethod: true,
         bank: true,
         bankAccountNumber: true,
+        bankHolderName: true,
+        yapeHolderName: true,
         supportPhone: true,
         defaultOrigin: true,
         defaultOriginLat: true,
@@ -73,6 +75,8 @@ export class UsersService {
     paymentMethod?: string;
     bank?: string;
     bankAccountNumber?: string;
+    bankHolderName?: string;
+    yapeHolderName?: string;
     supportPhone?: string;
     defaultOrigin?: string;
     defaultOriginLat?: number;
@@ -87,6 +91,8 @@ export class UsersService {
       paymentMethod: true,
       bank: true,
       bankAccountNumber: true,
+      bankHolderName: true,
+      yapeHolderName: true,
       supportPhone: true,
       aliclikUserCreated: true,
       defaultOrigin: true,
