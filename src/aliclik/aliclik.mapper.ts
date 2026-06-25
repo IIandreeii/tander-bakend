@@ -109,7 +109,7 @@ export function buildOrderPayload(params: {
     channel: 'TANDER',
     createdAtEmidica: order.createdAt.toISOString(),
     delivery: selectedCourier.deliveryCost,
-    currency: { code: 'PEN', symbol: 'S/' },
+
     customer: {
       name: order.recipientFullName,
       phone: order.recipientPhone,
