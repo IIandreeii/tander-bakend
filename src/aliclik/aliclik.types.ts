@@ -122,6 +122,8 @@ export interface AliclikOrderUserRecord {
   id: string;
   email: string;
   supportPhone: string | null;
+  yapeHolderName: string | null;
+  bankHolderName: string | null;
 }
 
 export interface AliclikOrderRecord {

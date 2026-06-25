@@ -294,6 +294,8 @@ export class AliclikService {
             id: true,
             email: true,
             supportPhone: true,
+            yapeHolderName: true,
+            bankHolderName: true,
           },
         },
       },
