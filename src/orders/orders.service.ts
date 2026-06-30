@@ -233,8 +233,8 @@ export class OrdersService {
       exampleOrigin, exampleOriginLat, exampleOriginLng,
       'Calle Destino 456, Miraflores', -12.1198930, -77.0298970,
       'Juan Pérez', '987654321', 50, 'Entregar en portería',
-      { f: 'HYPERLINK("https://maps.google.com/?q="&D2&","&E2,"Ver en mapa")' },
-      { f: 'HYPERLINK("https://maps.google.com/?q="&G2&","&H2,"Ver en mapa")' },
+      { f: 'IF(AND(D2<>"",E2<>""),HYPERLINK("https://maps.google.com/?q="&D2&","&E2,"Ver en mapa"),"")' },
+      { f: 'IF(AND(G2<>"",H2<>""),HYPERLINK("https://maps.google.com/?q="&G2&","&H2,"Ver en mapa"),"")' },
     ];
 
     const BLANK_ROWS = 20;
@@ -245,8 +245,8 @@ export class OrdersService {
         '', '', '',
         '', '', '',
         '', '', '', '',
-        { f: `HYPERLINK("https://maps.google.com/?q="&D${rowNum}&","&E${rowNum},"Ver en mapa")` },
-        { f: `HYPERLINK("https://maps.google.com/?q="&G${rowNum}&","&H${rowNum},"Ver en mapa")` },
+        { f: `IF(AND(D${rowNum}<>"",E${rowNum}<>""),HYPERLINK("https://maps.google.com/?q="&D${rowNum}&","&E${rowNum},"Ver en mapa"),"")` },
+        { f: `IF(AND(G${rowNum}<>"",H${rowNum}<>""),HYPERLINK("https://maps.google.com/?q="&G${rowNum}&","&H${rowNum},"Ver en mapa"),"")` },
       ];
     });
 
