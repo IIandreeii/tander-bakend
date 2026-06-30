@@ -335,6 +335,20 @@ export class OrdersService {
     wsInstr['!cols'] = [{ wch: 65 }];
     xlsx.utils.book_append_sheet(wb, wsInstr, 'Instrucciones');
 
+    const packageTable = [
+      ['tipoPaquete', 'Peso máximo', 'Largo', 'Ancho', 'Alto'],
+      ['XXS', '250 g',   '15 cm', '10 cm', '10 cm'],
+      ['XS',  '500 g',   '15 cm', '20 cm', '12 cm'],
+      ['S',   '2.000 g', '20 cm', '30 cm', '12 cm'],
+      ['M',   '5.000 g', '24 cm', '30 cm', '20 cm'],
+    ];
+
+    const wsPkg = xlsx.utils.aoa_to_sheet(packageTable);
+    wsPkg['!cols'] = [
+      { wch: 16 }, { wch: 14 }, { wch: 10 }, { wch: 10 }, { wch: 10 },
+    ];
+    xlsx.utils.book_append_sheet(wb, wsPkg, 'Tipos válidos');
+
     return xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer;
   }
 
