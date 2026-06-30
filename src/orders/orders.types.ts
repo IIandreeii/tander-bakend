@@ -97,3 +97,11 @@ export interface BulkCreateOrdersResponse {
   failed: number;
   results: BulkOrderRowResult[];
 }
+
+export interface AdminOrdersPage {
+  orders: OrderSummary[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}

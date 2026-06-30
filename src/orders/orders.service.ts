@@ -26,6 +26,7 @@ import {
   ORDER_TERMINAL_STATUSES,
 } from './orders.constants';
 import type {
+  AdminOrdersPage,
   BulkCreateOrdersResponse,
   BulkOrderRowResult,
   OrderCreationCapacityResponse,
@@ -583,21 +584,40 @@ export class OrdersService {
     return orders.map((order) => this.mapOrder(order));
   }
 
-  async getAdminOrders(): Promise<OrderSummary[]> {
-    const orders = await this.prisma.order.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            role: true,
-          },
-        },
-      },
-    });
+  async getAdminOrders(params: { search?: string; status?: string; page?: number; limit?: number }): Promise<AdminOrdersPage> {
+    const page = Math.max(1, params.page ?? 1);
+    const limit = Math.min(100, Math.max(1, params.limit ?? 25));
+    const skip = (page - 1) * limit;
 
-    return orders.map((order) => this.mapOrder(order));
+    const where = {
+      ...(params.status ? { status: params.status as import('../../generated/prisma/client').OrderStatus } : {}),
+      ...(params.search ? {
+        OR: [
+          { recipientFullName: { contains: params.search, mode: 'insensitive' as const } },
+          { recipientPhone: { contains: params.search, mode: 'insensitive' as const } },
+          { origin: { contains: params.search, mode: 'insensitive' as const } },
+          { destination: { contains: params.search, mode: 'insensitive' as const } },
+          { id: { contains: params.search, mode: 'insensitive' as const } },
+        ],
+      } : {}),
+    };
+
+    const include = {
+      user: { select: { id: true, email: true, role: true } },
+    };
+
+    const [orders, total] = await this.prisma.$transaction([
+      this.prisma.order.findMany({ where, include, orderBy: { createdAt: 'desc' }, skip, take: limit }),
+      this.prisma.order.count({ where }),
+    ]);
+
+    return {
+      orders: orders.map((order) => this.mapOrder(order)),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async getAdminOrder(orderId: string): Promise<OrderSummary> {
