@@ -359,6 +359,21 @@ export class OrdersService {
     return xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer;
   }
 
+  async bulkPreviewCapacity(userId: string, fileBuffer: Buffer): Promise<import('./orders.types').BulkCapacityPreview> {
+    const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = xlsx.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: '' });
+    const rowCount = rows.slice(1).filter((row) => {
+      const r = row as unknown[];
+      return r.some((cell) => cell !== '' && cell !== null && cell !== undefined);
+    }).length;
+
+    const capacity = await this.getMyCreationCapacity(userId);
+    const availableOrders = capacity.availableOrders ?? 0;
+
+    return { rowCount, availableOrders, canProceedAll: rowCount <= availableOrders };
+  }
+
   async bulkCreateOrders(userId: string, fileBuffer: Buffer): Promise<BulkCreateOrdersResponse> {
     const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];

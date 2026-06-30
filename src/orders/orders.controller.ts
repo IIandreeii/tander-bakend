@@ -28,6 +28,16 @@ export class OrdersController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post('bulk/preview')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
+  bulkPreviewCapacity(
+    @CurrentUser() user: AuthenticatedUser,
+    @UploadedFile() file: { buffer: Buffer },
+  ) {
+    return this.ordersService.bulkPreviewCapacity(user.id, file.buffer);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post('bulk')
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
   bulkCreateOrders(

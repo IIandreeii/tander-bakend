@@ -104,6 +104,12 @@ export interface BulkCreateOrdersResponse {
   results: BulkOrderRowResult[];
 }
 
+export interface BulkCapacityPreview {
+  rowCount: number;
+  availableOrders: number;
+  canProceedAll: boolean;
+}
+
 export interface AdminOrdersPage {
   orders: OrderSummary[];
   total: number;
