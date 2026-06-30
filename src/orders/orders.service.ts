@@ -205,56 +205,97 @@ export class OrdersService {
     return this.getMyOrder(userId, created.id);
   }
 
-  generateBulkTemplate(): Buffer {
+  async generateBulkTemplate(userId: string): Promise<Buffer> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { defaultOrigin: true, defaultOriginLat: true, defaultOriginLng: true },
+    });
+
+    const hasDefaultOrigin =
+      user?.defaultOrigin && user.defaultOriginLat != null && user.defaultOriginLng != null;
+
+    const defaultOrigin = hasDefaultOrigin ? user!.defaultOrigin! : 'Av. Ejemplo 123, Lima';
+    const defaultOriginLat = hasDefaultOrigin ? Number(user!.defaultOriginLat) : -12.046374;
+    const defaultOriginLng = hasDefaultOrigin ? Number(user!.defaultOriginLng) : -77.042793;
+
     const wb = xlsx.utils.book_new();
 
     const headers = [
-      'packageType', 'weightGrams',
-      'origin', 'originLat', 'originLng',
-      'destination', 'destinationLat', 'destinationLng',
-      'recipientFullName', 'recipientPhone', 'collectionAmount', 'note',
+      'tipoPaquete', 'pesoGramos',
+      'origen', 'origenLat', 'origenLng',
+      'destino', 'destinoLat', 'destinoLng',
+      'nombreDestinatario', 'telefonoDestinatario', 'montoACobrar', 'nota',
       'Ver origen en Maps', 'Ver destino en Maps',
     ];
 
-    const example = [
+    const exampleRow = [
       'XXS', 100,
-      'Av. Ejemplo 123, Lima', -12.046374, -77.042793,
+      defaultOrigin, defaultOriginLat, defaultOriginLng,
       'Calle Destino 456, Miraflores', -12.119893, -77.029897,
       'Juan Pérez', '987654321', 50, 'Entregar en portería',
       { f: 'HYPERLINK("https://maps.google.com/?q="&D2&","&E2,"Ver en mapa")' },
       { f: 'HYPERLINK("https://maps.google.com/?q="&G2&","&H2,"Ver en mapa")' },
     ];
 
-    const ws = xlsx.utils.aoa_to_sheet([headers, example]);
+    const BLANK_ROWS = 20;
+    const blankRows = Array.from({ length: BLANK_ROWS }, (_, i) => {
+      const rowNum = i + 3;
+      return [
+        '', '',
+        defaultOrigin, defaultOriginLat, defaultOriginLng,
+        '', '', '',
+        '', '', '', '',
+        { f: `HYPERLINK("https://maps.google.com/?q="&D${rowNum}&","&E${rowNum},"Ver en mapa")` },
+        { f: `HYPERLINK("https://maps.google.com/?q="&G${rowNum}&","&H${rowNum},"Ver en mapa")` },
+      ];
+    });
+
+    const ws = xlsx.utils.aoa_to_sheet([headers, exampleRow, ...blankRows]);
     ws['!cols'] = [
       { wch: 14 }, { wch: 12 },
-      { wch: 30 }, { wch: 12 }, { wch: 12 },
-      { wch: 30 }, { wch: 14 }, { wch: 14 },
-      { wch: 22 }, { wch: 14 }, { wch: 16 }, { wch: 26 },
+      { wch: 32 }, { wch: 13 }, { wch: 13 },
+      { wch: 32 }, { wch: 13 }, { wch: 13 },
+      { wch: 24 }, { wch: 20 }, { wch: 14 }, { wch: 28 },
       { wch: 20 }, { wch: 22 },
     ];
+
     xlsx.utils.book_append_sheet(wb, ws, 'Pedidos');
 
+    const originNote = hasDefaultOrigin
+      ? '✅ Tu origen por defecto ya está cargado en las filas.'
+      : 'ℹ️  Completá tu origen en el perfil para que se pre-rellene automáticamente.';
+
     const instructions = [
+      ['INSTRUCCIONES DE CARGA MASIVA — TANDER'],
+      [''],
+      [originNote],
+      [''],
       ['CÓMO OBTENER COORDENADAS DESDE GOOGLE MAPS'],
       [''],
       ['1. Abrí maps.google.com en tu navegador'],
-      ['2. Navegá hasta la ubicación exacta de origen o destino'],
+      ['2. Navegá hasta la ubicación exacta'],
       ['3. Hacé clic derecho sobre el punto exacto del mapa'],
-      ['4. Las coordenadas aparecen arriba del menú que se abre'],
+      ['4. Las coordenadas aparecen arriba del menú contextual'],
       ['   Ejemplo: -12.046374, -77.042793'],
-      ['5. El primer número es la LATITUD  (columnas originLat / destinationLat)'],
-      ['6. El segundo número es la LONGITUD (columnas originLng / destinationLng)'],
+      ['5. El primer número es la LATITUD  (origenLat / destinoLat)'],
+      ['6. El segundo número es la LONGITUD (origenLng / destinoLng)'],
       [''],
-      ['IMPORTANTE'],
-      ['- Los valores negativos son correctos para Lima, Perú'],
-      ['- Las columnas "Ver origen en Maps" y "Ver destino en Maps" son solo'],
-      ['  para verificar — no las modifiques'],
-      ['- El campo "note" es opcional'],
-      ['- collectionAmount: monto a cobrar al destinatario (0 si no hay cobro)'],
+      ['CAMPOS OBLIGATORIOS'],
+      ['tipoPaquete, pesoGramos, origen, origenLat, origenLng,'],
+      ['destino, destinoLat, destinoLng, nombreDestinatario,'],
+      ['telefonoDestinatario, montoACobrar'],
+      [''],
+      ['CAMPOS OPCIONALES'],
+      ['nota (texto libre, los datos de cobro se agregan automáticamente)'],
       [''],
       ['TIPOS DE PAQUETE VÁLIDOS'],
       ['XXS  /  XS  /  S  /  M'],
+      [''],
+      ['IMPORTANTE'],
+      ['- Los valores negativos en lat/lng son correctos para Lima, Perú'],
+      ['- Las columnas "Ver origen en Maps" y "Ver destino en Maps"'],
+      ['  son de verificación — no las modifiques'],
+      ['- Si montoACobrar es 0, el destinatario no paga nada'],
     ];
 
     const wsInstr = xlsx.utils.aoa_to_sheet(instructions);

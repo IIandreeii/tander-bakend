@@ -40,8 +40,8 @@ export class OrdersController {
   @Get('bulk/template')
   @Header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   @Header('Content-Disposition', 'attachment; filename="plantilla-pedidos-tander.xlsx"')
-  getBulkTemplate() {
-    const buffer = this.ordersService.generateBulkTemplate();
+  async getBulkTemplate(@CurrentUser() user: AuthenticatedUser) {
+    const buffer = await this.ordersService.generateBulkTemplate(user.id);
     return new StreamableFile(buffer);
   }
 
