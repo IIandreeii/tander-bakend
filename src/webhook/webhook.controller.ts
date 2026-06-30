@@ -24,13 +24,13 @@ function mapAliclikStatusToTander(payload: AliclikWebhookPayload): OrderStatus |
     return OrderStatus.DELIVERED;
   }
 
-  // status distinto de DELIVERED y terminal → en devolución
-  if (['REFUSED', 'NOT_RESPOND', 'CANCEL', 'ANNULLED', 'TRAVEL', 'OUT_OF_COVER', 'OUT_OF_STOCK', 'NOT_DISPATCH', 'NOT_COST'].includes(status)) {
-    return OrderStatus.RETURNING;
+  // status ANNULLED o callStatus ANNULLED → cancelado
+  if (status === 'ANNULLED' || callStatus === 'ANNULLED') {
+    return OrderStatus.CANCELLED;
   }
 
-  // callStatus ANNULLED → en devolución
-  if (callStatus === 'ANNULLED') {
+  // status terminal → en devolución
+  if (['REFUSED', 'NOT_RESPOND', 'CANCEL', 'TRAVEL', 'OUT_OF_COVER', 'OUT_OF_STOCK', 'NOT_DISPATCH', 'NOT_COST'].includes(status)) {
     return OrderStatus.RETURNING;
   }
 
