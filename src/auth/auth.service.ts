@@ -36,7 +36,8 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto): Promise<{ message: string }> {
-    const existingUser = await this.usersService.findByEmail(dto.email);
+    const normalizedEmail = this.normalizeEmail(dto.email);
+    const existingUser = await this.usersService.findByEmail(normalizedEmail);
 
     if (existingUser) {
       throw new ConflictException('Email is already registered');
@@ -48,7 +49,7 @@ export class AuthService {
     const verificationCodeExpiresAt = this.getCodeExpiry('EMAIL_VERIFICATION_CODE_TTL_MINUTES');
 
     await this.usersService.create({
-      email: dto.email,
+      email: normalizedEmail,
       passwordHash,
       role: Role.MASTER,
       isEmailVerified: false,
@@ -61,7 +62,7 @@ export class AuthService {
       },
     });
 
-    await this.mailService.sendVerificationCode(dto.email, verificationCode);
+    await this.mailService.sendVerificationCode(normalizedEmail, verificationCode);
 
     return {
       message: 'Registration successful. Check your email for the verification code.',
@@ -305,6 +306,10 @@ export class AuthService {
     }
 
     return user;
+  }
+
+  private normalizeEmail(email: string): string {
+    return email.trim().toLowerCase();
   }
 
   private async assertCodeMatch(params: {
