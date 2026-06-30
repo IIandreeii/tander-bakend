@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, HttpCode, Param, Patch, Post, StreamableFile, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Role } from '../../generated/prisma/client';
 import type { AuthenticatedUser } from '../auth/auth.types';
@@ -34,6 +34,15 @@ export class OrdersController {
     @UploadedFile() file: { buffer: Buffer },
   ) {
     return this.ordersService.bulkCreateOrders(user.id, file.buffer);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('bulk/template')
+  @Header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  @Header('Content-Disposition', 'attachment; filename="plantilla-pedidos-tander.xlsx"')
+  getBulkTemplate() {
+    const buffer = this.ordersService.generateBulkTemplate();
+    return new StreamableFile(buffer);
   }
 
   @UseGuards(JwtAuthGuard)

@@ -205,6 +205,65 @@ export class OrdersService {
     return this.getMyOrder(userId, created.id);
   }
 
+  generateBulkTemplate(): Buffer {
+    const wb = xlsx.utils.book_new();
+
+    const headers = [
+      'packageType', 'weightGrams',
+      'origin', 'originLat', 'originLng',
+      'destination', 'destinationLat', 'destinationLng',
+      'recipientFullName', 'recipientPhone', 'collectionAmount', 'note',
+      'Ver origen en Maps', 'Ver destino en Maps',
+    ];
+
+    const example = [
+      'XXS', 100,
+      'Av. Ejemplo 123, Lima', -12.046374, -77.042793,
+      'Calle Destino 456, Miraflores', -12.119893, -77.029897,
+      'Juan Pérez', '987654321', 50, 'Entregar en portería',
+      { f: 'HYPERLINK("https://maps.google.com/?q="&D2&","&E2,"Ver en mapa")' },
+      { f: 'HYPERLINK("https://maps.google.com/?q="&G2&","&H2,"Ver en mapa")' },
+    ];
+
+    const ws = xlsx.utils.aoa_to_sheet([headers, example]);
+    ws['!cols'] = [
+      { wch: 14 }, { wch: 12 },
+      { wch: 30 }, { wch: 12 }, { wch: 12 },
+      { wch: 30 }, { wch: 14 }, { wch: 14 },
+      { wch: 22 }, { wch: 14 }, { wch: 16 }, { wch: 26 },
+      { wch: 20 }, { wch: 22 },
+    ];
+    xlsx.utils.book_append_sheet(wb, ws, 'Pedidos');
+
+    const instructions = [
+      ['CÓMO OBTENER COORDENADAS DESDE GOOGLE MAPS'],
+      [''],
+      ['1. Abrí maps.google.com en tu navegador'],
+      ['2. Navegá hasta la ubicación exacta de origen o destino'],
+      ['3. Hacé clic derecho sobre el punto exacto del mapa'],
+      ['4. Las coordenadas aparecen arriba del menú que se abre'],
+      ['   Ejemplo: -12.046374, -77.042793'],
+      ['5. El primer número es la LATITUD  (columnas originLat / destinationLat)'],
+      ['6. El segundo número es la LONGITUD (columnas originLng / destinationLng)'],
+      [''],
+      ['IMPORTANTE'],
+      ['- Los valores negativos son correctos para Lima, Perú'],
+      ['- Las columnas "Ver origen en Maps" y "Ver destino en Maps" son solo'],
+      ['  para verificar — no las modifiques'],
+      ['- El campo "note" es opcional'],
+      ['- collectionAmount: monto a cobrar al destinatario (0 si no hay cobro)'],
+      [''],
+      ['TIPOS DE PAQUETE VÁLIDOS'],
+      ['XXS  /  XS  /  S  /  M'],
+    ];
+
+    const wsInstr = xlsx.utils.aoa_to_sheet(instructions);
+    wsInstr['!cols'] = [{ wch: 65 }];
+    xlsx.utils.book_append_sheet(wb, wsInstr, 'Instrucciones');
+
+    return xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer;
+  }
+
   async bulkCreateOrders(userId: string, fileBuffer: Buffer): Promise<BulkCreateOrdersResponse> {
     const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
