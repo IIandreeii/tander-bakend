@@ -48,8 +48,8 @@ export class OrdersController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  getMyOrders(@CurrentUser() user: AuthenticatedUser) {
-    return this.ordersService.getMyOrders(user.id);
+  getMyOrders(@CurrentUser() user: AuthenticatedUser, @Query('search') search?: string) {
+    return this.ordersService.getMyOrders(user.id, search);
   }
 
   @UseGuards(JwtAuthGuard)

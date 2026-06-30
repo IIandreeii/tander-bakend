@@ -501,9 +501,21 @@ export class OrdersService {
     }
   }
 
-  async getMyOrders(userId: string): Promise<OrderSummary[]> {
+  async getMyOrders(userId: string, search?: string): Promise<OrderSummary[]> {
+    const where = {
+      userId,
+      ...(search ? {
+        OR: [
+          { aliclikOrderNumber: { contains: search, mode: 'insensitive' as const } },
+          { recipientFullName: { contains: search, mode: 'insensitive' as const } },
+          { recipientPhone: { contains: search, mode: 'insensitive' as const } },
+          { destination: { contains: search, mode: 'insensitive' as const } },
+        ],
+      } : {}),
+    };
+
     const orders = await this.prisma.order.findMany({
-      where: { userId },
+      where,
       orderBy: { createdAt: 'desc' },
       include: {
         user: {
@@ -599,11 +611,13 @@ export class OrdersService {
       ...(params.status ? { status: params.status as import('../../generated/prisma/client').OrderStatus } : {}),
       ...(params.search ? {
         OR: [
+          { aliclikOrderNumber: { contains: params.search, mode: 'insensitive' as const } },
           { recipientFullName: { contains: params.search, mode: 'insensitive' as const } },
           { recipientPhone: { contains: params.search, mode: 'insensitive' as const } },
           { origin: { contains: params.search, mode: 'insensitive' as const } },
           { destination: { contains: params.search, mode: 'insensitive' as const } },
           { id: { contains: params.search, mode: 'insensitive' as const } },
+          { user: { email: { contains: params.search, mode: 'insensitive' as const } } },
         ],
       } : {}),
     };
