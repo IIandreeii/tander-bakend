@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Logger, Param, Patch, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Logger, Param, Patch, Query, Req, UseGuards } from '@nestjs/common';
 import { Role } from '../../generated/prisma/client';
 import type { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -30,8 +30,16 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SUPER_MASTER)
   @Get()
-  listAll() {
-    return this.usersService.findAll();
+  listAll(
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.usersService.findAll({
+      search,
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+    });
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

@@ -23,12 +23,26 @@ export class UsersService {
     private readonly configService: ConfigService,
   ) {}
 
-  findAll() {
-    return this.prisma.user.findMany({
-      where: { role: { not: Role.SUPER_MASTER } },
-      select: { id: true, email: true, role: true, isEmailVerified: true, createdAt: true },
-      orderBy: { createdAt: 'desc' },
-    });
+  async findAll(params: { search?: string; page?: number; limit?: number } = {}) {
+    const page = Math.max(1, params.page ?? 1);
+    const limit = Math.min(100, Math.max(1, params.limit ?? 20));
+    const skip = (page - 1) * limit;
+
+    const where = {
+      role: { not: Role.SUPER_MASTER },
+      ...(params.search ? {
+        email: { contains: params.search, mode: 'insensitive' as const },
+      } : {}),
+    };
+
+    const select = { id: true, email: true, role: true, isEmailVerified: true, createdAt: true };
+
+    const [users, total] = await this.prisma.$transaction([
+      this.prisma.user.findMany({ where, select, orderBy: { createdAt: 'desc' }, skip, take: limit }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    return { users, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   findByEmail(email: string) {
