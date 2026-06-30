@@ -5,6 +5,12 @@ export interface OrderUserSummary {
   id: string;
   email: string;
   role: Role;
+  paymentMethod?: string | null;
+  paymentPhone?: string | null;
+  bank?: string | null;
+  bankAccountNumber?: string | null;
+  bankHolderName?: string | null;
+  yapeHolderName?: string | null;
 }
 
 export interface OrderPackageDimensions {

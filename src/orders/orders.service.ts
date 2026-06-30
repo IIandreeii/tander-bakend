@@ -46,6 +46,12 @@ interface OrderUserRecord {
   id: string;
   email: string;
   role: OrderSummary['user']['role'];
+  paymentMethod?: string | null;
+  paymentPhone?: string | null;
+  bank?: string | null;
+  bankAccountNumber?: string | null;
+  bankHolderName?: string | null;
+  yapeHolderName?: string | null;
 }
 
 interface OrderRecord {
@@ -603,7 +609,19 @@ export class OrdersService {
     };
 
     const include = {
-      user: { select: { id: true, email: true, role: true } },
+      user: {
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          paymentMethod: true,
+          paymentPhone: true,
+          bank: true,
+          bankAccountNumber: true,
+          bankHolderName: true,
+          yapeHolderName: true,
+        },
+      },
     };
 
     const [orders, total] = await this.prisma.$transaction([
