@@ -31,7 +31,7 @@ export class OrdersController {
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
   bulkCreateOrders(
     @CurrentUser() user: AuthenticatedUser,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: { buffer: Buffer },
   ) {
     return this.ordersService.bulkCreateOrders(user.id, file.buffer);
   }
