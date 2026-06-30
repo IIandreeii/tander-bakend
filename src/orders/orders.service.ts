@@ -214,9 +214,9 @@ export class OrdersService {
     const hasDefaultOrigin =
       user?.defaultOrigin && user.defaultOriginLat != null && user.defaultOriginLng != null;
 
-    const defaultOrigin = hasDefaultOrigin ? user!.defaultOrigin! : 'Av. Ejemplo 123, Lima';
-    const defaultOriginLat = hasDefaultOrigin ? Number(user!.defaultOriginLat) : -12.046374;
-    const defaultOriginLng = hasDefaultOrigin ? Number(user!.defaultOriginLng) : -77.042793;
+    const exampleOrigin    = hasDefaultOrigin ? user!.defaultOrigin! : 'Av. Ejemplo 123, Lima';
+    const exampleOriginLat = hasDefaultOrigin ? parseFloat(Number(user!.defaultOriginLat).toFixed(7)) : -12.046374;
+    const exampleOriginLng = hasDefaultOrigin ? parseFloat(Number(user!.defaultOriginLng).toFixed(7)) : -77.042793;
 
     const wb = xlsx.utils.book_new();
 
@@ -230,8 +230,8 @@ export class OrdersService {
 
     const exampleRow = [
       'XXS', 100,
-      defaultOrigin, defaultOriginLat, defaultOriginLng,
-      'Calle Destino 456, Miraflores', -12.119893, -77.029897,
+      exampleOrigin, exampleOriginLat, exampleOriginLng,
+      'Calle Destino 456, Miraflores', -12.1198930, -77.0298970,
       'Juan Pérez', '987654321', 50, 'Entregar en portería',
       { f: 'HYPERLINK("https://maps.google.com/?q="&D2&","&E2,"Ver en mapa")' },
       { f: 'HYPERLINK("https://maps.google.com/?q="&G2&","&H2,"Ver en mapa")' },
@@ -242,7 +242,7 @@ export class OrdersService {
       const rowNum = i + 3;
       return [
         '', '',
-        defaultOrigin, defaultOriginLat, defaultOriginLng,
+        '', '', '',
         '', '', '',
         '', '', '', '',
         { f: `HYPERLINK("https://maps.google.com/?q="&D${rowNum}&","&E${rowNum},"Ver en mapa")` },
