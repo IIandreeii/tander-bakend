@@ -6,6 +6,9 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
+import * as xlsx from 'xlsx';
 import { Prisma, OrderStatus, WalletTransactionType } from '../../generated/prisma/client';
 import { AliclikService } from '../aliclik/aliclik.service';
 import { ALICLIK_SYNC_STATUS } from '../aliclik/aliclik.types';
@@ -23,6 +26,8 @@ import {
   ORDER_TERMINAL_STATUSES,
 } from './orders.constants';
 import type {
+  BulkCreateOrdersResponse,
+  BulkOrderRowResult,
   OrderCreationCapacityResponse,
   OrderHistoryResponse,
   OrderPackageConfigResponse,
@@ -198,6 +203,65 @@ export class OrdersService {
     }
 
     return this.getMyOrder(userId, created.id);
+  }
+
+  async bulkCreateOrders(userId: string, fileBuffer: Buffer): Promise<BulkCreateOrdersResponse> {
+    const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = xlsx.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: '' });
+
+    const dataRows = rows.slice(1).filter((row) => {
+      const r = row as unknown[];
+      return r.some((cell) => cell !== '' && cell !== null && cell !== undefined);
+    }) as unknown[][];
+
+    const results: BulkOrderRowResult[] = [];
+    let succeeded = 0;
+    let failed = 0;
+
+    for (let i = 0; i < dataRows.length; i++) {
+      const rowNumber = i + 2;
+      const row = dataRows[i] as unknown[];
+
+      const rawDto = {
+        packageType: String(row[0] ?? '').trim().toUpperCase(),
+        weightGrams: Number(row[1]),
+        origin: String(row[2] ?? '').trim(),
+        originLat: Number(row[3]),
+        originLng: Number(row[4]),
+        destination: String(row[5] ?? '').trim(),
+        destinationLat: Number(row[6]),
+        destinationLng: Number(row[7]),
+        recipientFullName: String(row[8] ?? '').trim(),
+        recipientPhone: String(row[9] ?? '').trim(),
+        collectionAmount: row[10] !== '' && row[10] !== null && row[10] !== undefined ? Number(row[10]) : undefined,
+        note: row[11] !== '' && row[11] !== null && row[11] !== undefined ? String(row[11]).trim() : undefined,
+      };
+
+      const dto = plainToInstance(CreateOrderDto, rawDto);
+      const errors = await validate(dto);
+
+      if (errors.length > 0) {
+        const message = errors
+          .map((e) => Object.values(e.constraints ?? {}).join(', '))
+          .join('; ');
+        results.push({ row: rowNumber, status: 'error', error: `Validación: ${message}` });
+        failed++;
+        continue;
+      }
+
+      try {
+        const order = await this.createOrder(userId, dto);
+        results.push({ row: rowNumber, status: 'success', orderId: order.id });
+        succeeded++;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        results.push({ row: rowNumber, status: 'error', error: message });
+        failed++;
+      }
+    }
+
+    return { total: dataRows.length, succeeded, failed, results };
   }
 
   async updateOrder(userId: string, orderId: string, dto: UpdateOrderDto): Promise<OrderSummary> {

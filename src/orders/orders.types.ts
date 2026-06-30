@@ -83,3 +83,17 @@ export interface OrderHistoryResponse {
   order: OrderSummary;
   history: OrderStatusHistoryItem[];
 }
+
+export interface BulkOrderRowResult {
+  row: number;
+  status: 'success' | 'error';
+  orderId?: string;
+  error?: string;
+}
+
+export interface BulkCreateOrdersResponse {
+  total: number;
+  succeeded: number;
+  failed: number;
+  results: BulkOrderRowResult[];
+}
