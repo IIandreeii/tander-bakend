@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Logger, Patch, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Logger, Param, Patch, Req, UseGuards } from '@nestjs/common';
 import { Role } from '../../generated/prisma/client';
 import type { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -32,5 +32,12 @@ export class UsersController {
   @Get()
   listAll() {
     return this.usersService.findAll();
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_MASTER)
+  @Get(':id')
+  getUserById(@Param('id') id: string) {
+    return this.usersService.getProfile(id);
   }
 }
