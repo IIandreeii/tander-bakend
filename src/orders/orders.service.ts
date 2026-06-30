@@ -250,6 +250,9 @@ export class OrdersService {
       ];
     });
 
+    const DATA_RANGE = `A2:A${2 + BLANK_ROWS}`;
+    const WEIGHT_RANGE = `B2:B${2 + BLANK_ROWS}`;
+
     const ws = xlsx.utils.aoa_to_sheet([headers, exampleRow, ...blankRows]);
     ws['!cols'] = [
       { wch: 14 }, { wch: 12 },
@@ -257,6 +260,30 @@ export class OrdersService {
       { wch: 32 }, { wch: 13 }, { wch: 13 },
       { wch: 24 }, { wch: 20 }, { wch: 14 }, { wch: 28 },
       { wch: 20 }, { wch: 22 },
+    ];
+
+    ws['!dataValidations'] = [
+      {
+        type: 'list',
+        sqref: DATA_RANGE,
+        formula1: '"XXS,XS,S,M"',
+        showDropDown: false,
+        showErrorMessage: true,
+        errorStyle: 'stop',
+        errorTitle: 'Tipo de paquete inválido',
+        error: 'Seleccioná uno de los tipos disponibles: XXS, XS, S o M',
+        allowBlank: true,
+      },
+      {
+        type: 'custom',
+        sqref: WEIGHT_RANGE,
+        formula1: 'AND(B2>=1,IF(A2="XXS",B2<=250,IF(A2="XS",B2<=500,IF(A2="S",B2<=2000,IF(A2="M",B2<=5000,FALSE)))))',
+        showErrorMessage: true,
+        errorStyle: 'stop',
+        errorTitle: 'Peso fuera de rango',
+        error: 'XXS: máx 250 g  |  XS: máx 500 g  |  S: máx 2000 g  |  M: máx 5000 g',
+        allowBlank: true,
+      },
     ];
 
     xlsx.utils.book_append_sheet(wb, ws, 'Pedidos');
@@ -288,8 +315,14 @@ export class OrdersService {
       ['CAMPOS OPCIONALES'],
       ['nota (texto libre, los datos de cobro se agregan automáticamente)'],
       [''],
-      ['TIPOS DE PAQUETE VÁLIDOS'],
-      ['XXS  /  XS  /  S  /  M'],
+      ['TIPOS DE PAQUETE Y PESOS MÁXIMOS'],
+      ['XXS  →  máx. 250 g'],
+      ['XS   →  máx. 500 g'],
+      ['S    →  máx. 2.000 g'],
+      ['M    →  máx. 5.000 g'],
+      [''],
+      ['La columna tipoPaquete tiene un menú desplegable en el Excel.'],
+      ['La columna pesoGramos valida automáticamente el rango según el tipo.'],
       [''],
       ['IMPORTANTE'],
       ['- Los valores negativos en lat/lng son correctos para Lima, Perú'],
