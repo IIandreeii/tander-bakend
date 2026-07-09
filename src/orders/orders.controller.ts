@@ -195,6 +195,13 @@ export class OrdersController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SUPER_MASTER)
+  @Get(':orderId/aliclik/evidences')
+  getAdminAliclikEvidences(@Param('orderId') orderId: string) {
+    return this.aliclikService.getEvidencesAndPaymentsAdmin(orderId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_MASTER)
   @Get(':orderId')
   getAdminOrder(@Param('orderId') orderId: string) {
     return this.ordersService.getAdminOrder(orderId);

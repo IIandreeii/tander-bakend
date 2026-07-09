@@ -10,6 +10,7 @@ import { AliclikClient } from './aliclik.client';
 import {
   ALICLIK_SYNC_ACTION,
   ALICLIK_SYNC_STATUS,
+  type AliclikEvidencesAndPaymentsResponse,
   type AliclikOrderRecord,
   type AliclikOrderSyncResult,
   type AliclikOrderSyncState,
@@ -207,16 +208,94 @@ export class AliclikService {
 
   async getEvidencesAndPayments(userId: string, orderId: string) {
     const order = await this.findOrderByIdAndUserIdOrThrow(userId, orderId);
-    const aliclikOrderNumber = this.requireLinkedOrderNumber(order);
+    return this.resolveEvidencesAndPayments(order.id, order.aliclikOrderNumber, order.status);
+  }
 
-    const response = await this.client.getEvidencesAndPayments(aliclikOrderNumber);
+  async getEvidencesAndPaymentsAdmin(orderId: string) {
+    const order = await this.findOrderByIdOrThrowAdmin(orderId);
+    return this.resolveEvidencesAndPayments(order.id, order.aliclikOrderNumber, order.status);
+  }
 
+  private async resolveEvidencesAndPayments(
+    orderId: string,
+    aliclikOrderNumber: string | null,
+    orderStatus: string,
+  ): Promise<AliclikEvidencesAndPaymentsResponse> {
+    const cached = await this.getCachedEvidencesAndPayments(orderId, aliclikOrderNumber);
+    if (cached) {
+      return cached;
+    }
+
+    if (orderStatus !== 'DELIVERED') {
+      throw new BadRequestException('Order is not yet delivered');
+    }
+
+    const orderNumber = this.requireLinkedOrderNumber({ aliclikOrderNumber });
+    const response = await this.client.getEvidencesAndPayments(orderNumber);
+    await this.persistEvidencesAndPayments(orderId, response);
+
+    return response;
+  }
+
+  private async getCachedEvidencesAndPayments(
+    orderId: string,
+    aliclikOrderNumber: string | null,
+  ): Promise<AliclikEvidencesAndPaymentsResponse | null> {
+    const [evidences, payments] = await Promise.all([
+      this.prisma.aliclikOrderEvidence.findMany({
+        where: { orderId },
+        orderBy: { remoteId: 'desc' },
+      }),
+      this.prisma.aliclikOrderPayment.findMany({
+        where: { orderId },
+        orderBy: { remoteCreatedAt: 'desc' },
+      }),
+    ]);
+
+    if (evidences.length === 0 && payments.length === 0) {
+      return null;
+    }
+
+    return {
+      orderNumber: aliclikOrderNumber ?? '',
+      evidences: evidences.map((e) => ({
+        id: e.remoteId,
+        deliveryStatus: e.deliveryStatus,
+        subStatus: e.subStatus,
+        comment: e.comment,
+        evidenceDelivery: e.evidenceDelivery,
+        evidenceSupport: e.evidenceSupport,
+        evidenceCall: e.evidenceCall,
+        evidenceChat: e.evidenceChat,
+        evidenceCallChat: e.evidenceCallChat,
+        method: e.method,
+        deliveryDate: e.deliveryDate ? e.deliveryDate.toISOString() : null,
+        createdAt: e.remoteCreatedAt ? e.remoteCreatedAt.toISOString() : null,
+      })),
+      payments: payments.map((p) => ({
+        id: p.remoteId,
+        amount: Number(p.amount),
+        paymentMethod: p.paymentMethod,
+        entity: p.entity,
+        paymentDate: p.paymentDate ? p.paymentDate.toISOString() : null,
+        paymentDocument: p.paymentDocument,
+        status: p.status,
+        orderDeliveryId: p.orderDeliveryRemoteId,
+        createdAt: p.remoteCreatedAt ? p.remoteCreatedAt.toISOString() : null,
+      })),
+    };
+  }
+
+  private async persistEvidencesAndPayments(
+    orderId: string,
+    response: Awaited<ReturnType<AliclikClient['getEvidencesAndPayments']>>,
+  ): Promise<void> {
     await this.prisma.$transaction([
       ...response.evidences.map((e) =>
         this.prisma.aliclikOrderEvidence.upsert({
-          where: { orderId_remoteId: { orderId: order.id, remoteId: e.id } },
+          where: { orderId_remoteId: { orderId, remoteId: e.id } },
           create: {
-            orderId: order.id,
+            orderId,
             remoteId: e.id,
             deliveryStatus: e.deliveryStatus,
             subStatus: e.subStatus,
@@ -246,9 +325,9 @@ export class AliclikService {
       ),
       ...response.payments.map((p) =>
         this.prisma.aliclikOrderPayment.upsert({
-          where: { orderId_remoteId: { orderId: order.id, remoteId: p.id } },
+          where: { orderId_remoteId: { orderId, remoteId: p.id } },
           create: {
-            orderId: order.id,
+            orderId,
             remoteId: p.id,
             amount: p.amount,
             paymentMethod: p.paymentMethod,
@@ -271,8 +350,6 @@ export class AliclikService {
         }),
       ),
     ]);
-
-    return response;
   }
 
   async retryOrderSync(orderId: string) {
@@ -378,6 +455,21 @@ export class AliclikService {
     return order;
   }
 
+  private async findOrderByIdOrThrowAdmin(
+    orderId: string,
+  ): Promise<{ id: string; aliclikOrderNumber: string | null; status: string }> {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      select: { id: true, aliclikOrderNumber: true, status: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    return order;
+  }
+
   private async persistSyncSuccess(
     orderId: string,
     action: typeof ALICLIK_SYNC_ACTION[keyof typeof ALICLIK_SYNC_ACTION],
@@ -456,7 +548,7 @@ export class AliclikService {
     };
   }
 
-  private requireLinkedOrderNumber(order: AliclikOrderRecord): string {
+  private requireLinkedOrderNumber(order: { aliclikOrderNumber: string | null }): string {
     if (!order.aliclikOrderNumber) {
       throw new BadRequestException('Order is not linked to Aliclik');
     }
