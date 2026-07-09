@@ -167,3 +167,36 @@ export interface AliclikOrderSyncResult extends AliclikOrderSyncState {
   message: string;
   externalOrder: unknown;
 }
+
+export interface AliclikEvidenceItem {
+  id: number;
+  deliveryStatus: string | null;
+  subStatus: string | null;
+  comment: string | null;
+  evidenceDelivery: string | null;
+  evidenceSupport: string | null;
+  evidenceCall: string | null;
+  evidenceChat: string | null;
+  evidenceCallChat: string | null;
+  method: string | null;
+  deliveryDate: string | null;
+  createdAt: string | null;
+}
+
+export interface AliclikPaymentItem {
+  id: string;
+  amount: number;
+  paymentMethod: string | null;
+  entity: string | null;
+  paymentDate: string | null;
+  paymentDocument: string | null;
+  status: string;
+  orderDeliveryId: number | null;
+  createdAt: string | null;
+}
+
+export interface AliclikEvidencesAndPaymentsResponse {
+  orderNumber: string;
+  evidences: AliclikEvidenceItem[];
+  payments: AliclikPaymentItem[];
+}

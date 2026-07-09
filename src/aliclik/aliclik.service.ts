@@ -205,6 +205,76 @@ export class AliclikService {
     return this.client.getOrderByNumber(orderNumber);
   }
 
+  async getEvidencesAndPayments(userId: string, orderId: string) {
+    const order = await this.findOrderByIdAndUserIdOrThrow(userId, orderId);
+    const aliclikOrderNumber = this.requireLinkedOrderNumber(order);
+
+    const response = await this.client.getEvidencesAndPayments(aliclikOrderNumber);
+
+    await this.prisma.$transaction([
+      ...response.evidences.map((e) =>
+        this.prisma.aliclikOrderEvidence.upsert({
+          where: { orderId_remoteId: { orderId: order.id, remoteId: e.id } },
+          create: {
+            orderId: order.id,
+            remoteId: e.id,
+            deliveryStatus: e.deliveryStatus,
+            subStatus: e.subStatus,
+            comment: e.comment,
+            evidenceDelivery: e.evidenceDelivery,
+            evidenceSupport: e.evidenceSupport,
+            evidenceCall: e.evidenceCall,
+            evidenceChat: e.evidenceChat,
+            evidenceCallChat: e.evidenceCallChat,
+            method: e.method,
+            deliveryDate: e.deliveryDate ? new Date(e.deliveryDate) : null,
+            remoteCreatedAt: e.createdAt ? new Date(e.createdAt) : null,
+          },
+          update: {
+            deliveryStatus: e.deliveryStatus,
+            subStatus: e.subStatus,
+            comment: e.comment,
+            evidenceDelivery: e.evidenceDelivery,
+            evidenceSupport: e.evidenceSupport,
+            evidenceCall: e.evidenceCall,
+            evidenceChat: e.evidenceChat,
+            evidenceCallChat: e.evidenceCallChat,
+            method: e.method,
+            deliveryDate: e.deliveryDate ? new Date(e.deliveryDate) : null,
+          },
+        }),
+      ),
+      ...response.payments.map((p) =>
+        this.prisma.aliclikOrderPayment.upsert({
+          where: { orderId_remoteId: { orderId: order.id, remoteId: p.id } },
+          create: {
+            orderId: order.id,
+            remoteId: p.id,
+            amount: p.amount,
+            paymentMethod: p.paymentMethod,
+            entity: p.entity,
+            paymentDate: p.paymentDate ? new Date(p.paymentDate) : null,
+            paymentDocument: p.paymentDocument,
+            status: p.status,
+            orderDeliveryRemoteId: p.orderDeliveryId,
+            remoteCreatedAt: p.createdAt ? new Date(p.createdAt) : null,
+          },
+          update: {
+            amount: p.amount,
+            paymentMethod: p.paymentMethod,
+            entity: p.entity,
+            paymentDate: p.paymentDate ? new Date(p.paymentDate) : null,
+            paymentDocument: p.paymentDocument,
+            status: p.status,
+            orderDeliveryRemoteId: p.orderDeliveryId,
+          },
+        }),
+      ),
+    ]);
+
+    return response;
+  }
+
   async retryOrderSync(orderId: string) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },

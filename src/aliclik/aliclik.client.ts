@@ -1,6 +1,6 @@
 import { BadGatewayException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { AliclikOrderPayload, AliclikShippingQuoteResponse } from './aliclik.types';
+import type { AliclikEvidencesAndPaymentsResponse, AliclikOrderPayload, AliclikShippingQuoteResponse } from './aliclik.types';
 
 interface AliclikRequestOptions {
   method: string;
@@ -75,6 +75,13 @@ export class AliclikClient {
     return this.request<unknown>({
       method: 'GET',
       path: `/integration/order/by-number/${encodeURIComponent(orderNumber)}`,
+    });
+  }
+
+  async getEvidencesAndPayments(orderNumber: string): Promise<AliclikEvidencesAndPaymentsResponse> {
+    return this.request<AliclikEvidencesAndPaymentsResponse>({
+      method: 'GET',
+      path: `/external/integration/order/${encodeURIComponent(orderNumber)}/evidences-payments`,
     });
   }
 

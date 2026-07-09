@@ -159,10 +159,59 @@ model Order {
   user                        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   statusHistory               OrderStatusHistory[]
   deliveredChargeTransaction   WalletTransaction?   @relation("OrderDeliveredChargeTransaction")
+  aliclikEvidences             AliclikOrderEvidence[]
+  aliclikPayments               AliclikOrderPayment[]
 
   @@index([userId, createdAt(sort: Desc)])
   @@index([status, createdAt(sort: Desc)])
   @@map("orders")
+}
+
+model AliclikOrderEvidence {
+  id               String    @id @default(cuid())
+  orderId          String
+  remoteId         Int
+  deliveryStatus   String?
+  subStatus        String?
+  comment          String?
+  evidenceDelivery String?
+  evidenceSupport  String?
+  evidenceCall     String?
+  evidenceChat     String?
+  evidenceCallChat String?
+  method           String?
+  deliveryDate     DateTime?
+  remoteCreatedAt  DateTime?
+  fetchedAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, remoteId])
+  @@index([orderId])
+  @@map("aliclik_order_evidences")
+}
+
+model AliclikOrderPayment {
+  id                    String    @id @default(cuid())
+  orderId               String
+  remoteId              String
+  amount                Decimal   @db.Decimal(10, 2)
+  paymentMethod         String?
+  entity                String?
+  paymentDate           DateTime?
+  paymentDocument       String?
+  status                String
+  orderDeliveryRemoteId Int?
+  remoteCreatedAt       DateTime?
+  fetchedAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, remoteId])
+  @@index([orderId])
+  @@map("aliclik_order_payments")
 }
 
 model OrderStatusHistory {

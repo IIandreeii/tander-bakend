@@ -143,6 +143,12 @@ export class OrdersController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('me/:orderId/aliclik/evidences')
+  getAliclikEvidences(@CurrentUser() user: AuthenticatedUser, @Param('orderId') orderId: string) {
+    return this.aliclikService.getEvidencesAndPayments(user.id, orderId);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Patch('me/:orderId')
   updateOrder(@CurrentUser() user: AuthenticatedUser, @Param('orderId') orderId: string, @Body() dto: UpdateOrderDto) {
     return this.ordersService.updateOrder(user.id, orderId, dto);
