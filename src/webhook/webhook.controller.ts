@@ -1,7 +1,11 @@
-import { Body, Controller, HttpCode, Logger, Post } from '@nestjs/common';
+import { Body, Controller, Headers, HttpCode, Logger, Post, Req } from '@nestjs/common';
+import type { RawBodyRequest } from '@nestjs/common';
+import type { Request } from 'express';
 import { OrderStatus } from '../../generated/prisma/client';
+import { CobranaService } from '../cobrana/cobrana.service';
 import { OrdersService } from '../orders/orders.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { WalletService } from '../wallet/wallet.service';
 
 interface AliclikWebhookPayload {
   orderNumber: string;
@@ -64,6 +68,8 @@ export class WebhookController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ordersService: OrdersService,
+    private readonly cobranaService: CobranaService,
+    private readonly walletService: WalletService,
   ) {}
 
   @Post('order-status')
@@ -113,6 +119,53 @@ export class WebhookController {
     this.logger.log(`Updating order ${order.id} to status ${tenderStatus}`);
     await this.ordersService.updateOrderStatus(order.id, { status: tenderStatus }, order.userId);
     this.logger.log(`Order ${order.id} status updated successfully to ${tenderStatus}`);
+
+    return { received: true };
+  }
+
+  @Post('cobrana')
+  @HttpCode(200)
+  async handleCobrana(
+    @Req() req: RawBodyRequest<Request>,
+    @Headers('x-cobrana-signature') signature: string,
+  ) {
+    const rawBody = req.rawBody ?? Buffer.from('');
+
+    this.logger.log(`Cobrana webhook received — signature: ${signature}`);
+
+    try {
+      this.cobranaService.verifyWebhookSignature(rawBody, signature ?? '');
+    } catch (error) {
+      this.logger.warn(`Cobrana webhook signature verification failed: ${error instanceof Error ? error.message : String(error)}`);
+      return { received: false };
+    }
+
+    const event = this.cobranaService.parseWebhookEvent(rawBody);
+
+    this.logger.log(`Cobrana event ${event.id} type: ${event.type}`);
+
+    if (event.type !== 'charge.paid') {
+      return { received: true };
+    }
+
+    const charge = event.data.object;
+
+    if (!charge.externalRef) {
+      this.logger.warn(`Cobrana charge.paid event ${event.id} has no externalRef — ignoring`);
+      return { received: true };
+    }
+
+    try {
+      await this.walletService.handleChargePaid({
+        cobranaChargeId: charge.id,
+        externalRef: charge.externalRef,
+        eventId: event.id,
+        paidAt: charge.paidAt,
+      });
+      this.logger.log(`Cobrana event ${event.id} processed — top-up ${charge.externalRef} credited`);
+    } catch (error) {
+      this.logger.error(`Cobrana event ${event.id} processing failed`, error instanceof Error ? error.message : String(error));
+    }
 
     return { received: true };
   }

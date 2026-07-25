@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import { IsIn, IsNumber, IsOptional, IsString, ValidateIf, Matches } from 'class-validator';
 
+
 export class UpdateProfileDto {
   @IsOptional()
   @IsString()
@@ -47,4 +48,9 @@ export class UpdateProfileDto {
   @Type(() => Number)
   @IsNumber()
   defaultOriginLng?: number;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{8}(\d{3})?$/, { message: 'documentNumber must be an 8-digit DNI or 11-digit RUC' })
+  documentNumber?: string;
 }

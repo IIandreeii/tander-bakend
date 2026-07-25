@@ -1,4 +1,4 @@
-import type { Role, WalletTransactionType } from '../../generated/prisma/client';
+import type { Role, WalletTopUpStatus, WalletTransactionType } from '../../generated/prisma/client';
 
 export interface WalletUserSummary {
   id: string;
@@ -46,4 +46,23 @@ export interface WalletHistoryResponse {
 export interface WalletAdjustmentResponse {
   wallet: WalletSummary;
   transaction: WalletTransactionHistoryItem;
+}
+
+export interface TopUpSummary {
+  id: string;
+  walletId: string;
+  userId: string;
+  amount: string;
+  status: WalletTopUpStatus;
+  cobranaCode: string | null;
+  paymentUrl: string | null;
+  paidAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface InitiateTopUpResponse {
+  topUp: TopUpSummary;
+  code: string | null;
+  paymentUrl: string | null;
 }

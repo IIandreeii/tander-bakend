@@ -1,11 +1,13 @@
 import { Logger, MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
+import { CobranaModule } from '../cobrana/cobrana.module';
 import { OrdersModule } from '../orders/orders.module';
+import { WalletModule } from '../wallet/wallet.module';
 import { WebhookController } from './webhook.controller';
 
 const webhookLogger = new Logger('WebhookIncoming');
 
 @Module({
-  imports: [OrdersModule],
+  imports: [OrdersModule, CobranaModule, WalletModule],
   controllers: [WebhookController],
 })
 export class WebhookModule implements NestModule {

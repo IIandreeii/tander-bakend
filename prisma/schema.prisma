@@ -50,6 +50,13 @@ enum AliclikSyncStatus {
   ERROR
 }
 
+enum WalletTopUpStatus {
+  PENDING
+  PAID
+  CANCELLED
+  FAILED
+}
+
 enum AliclikSyncAction {
   QUOTE
   CREATE
@@ -82,6 +89,7 @@ model User {
   yapeHolderName                 String?
   supportPhone                   String?
   aliclikUserCreated             Boolean             @default(false)
+  documentNumber                 String?
   defaultOrigin                  String?
   defaultOriginLat               Decimal?
   defaultOriginLng               Decimal?
@@ -103,6 +111,7 @@ model Wallet {
 
   user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions WalletTransaction[]
+  topUps       WalletTopUp[]
 
   @@map("wallets")
 }
@@ -212,6 +221,27 @@ model AliclikOrderPayment {
   @@unique([orderId, remoteId])
   @@index([orderId])
   @@map("aliclik_order_payments")
+}
+
+model WalletTopUp {
+  id              String            @id @default(cuid())
+  walletId        String
+  userId          String
+  cobranaChargeId String?           @unique
+  cobranaEventId  String?           @unique
+  amount          Decimal           @db.Decimal(10, 2)
+  status          WalletTopUpStatus @default(PENDING)
+  cobranaCode     String?
+  paymentUrl      String?
+  paidAt          DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([walletId, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("wallet_top_ups")
 }
 
 model OrderStatusHistory {

@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { CreateTopUpDto } from './dto/create-top-up.dto';
 import { Role } from '../../generated/prisma/client';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -47,5 +48,23 @@ export class WalletController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.walletService.adjustWallet(userId, dto, user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('top-up')
+  initiateTopUp(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateTopUpDto) {
+    return this.walletService.initiateTopUp(user.id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('top-ups')
+  getMyTopUps(@CurrentUser() user: AuthenticatedUser) {
+    return this.walletService.getMyTopUps(user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('top-up/:id')
+  getMyTopUp(@CurrentUser() user: AuthenticatedUser, @Param('id') topUpId: string) {
+    return this.walletService.getMyTopUp(user.id, topUpId);
   }
 }

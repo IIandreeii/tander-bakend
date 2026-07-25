@@ -78,6 +78,7 @@ export class UsersService {
         bankHolderName: true,
         yapeHolderName: true,
         supportPhone: true,
+        documentNumber: true,
         defaultOrigin: true,
         defaultOriginLat: true,
         defaultOriginLng: true,
@@ -94,6 +95,7 @@ export class UsersService {
     bankHolderName?: string;
     yapeHolderName?: string;
     supportPhone?: string;
+    documentNumber?: string;
     defaultOrigin?: string;
     defaultOriginLat?: number;
     defaultOriginLng?: number;
@@ -110,6 +112,7 @@ export class UsersService {
       bankHolderName: true,
       yapeHolderName: true,
       supportPhone: true,
+      documentNumber: true,
       aliclikUserCreated: true,
       defaultOrigin: true,
       defaultOriginLat: true,
