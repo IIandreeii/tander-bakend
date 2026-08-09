@@ -66,3 +66,15 @@ export interface InitiateTopUpResponse {
   code: string | null;
   paymentUrl: string | null;
 }
+
+export interface TopUpAdminItem extends TopUpSummary {
+  userEmail: string;
+}
+
+export interface TopUpsAdminPage {
+  topUps: TopUpAdminItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}

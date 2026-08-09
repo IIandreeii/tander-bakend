@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { CreateTopUpDto } from './dto/create-top-up.dto';
 import { Role } from '../../generated/prisma/client';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -8,6 +8,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import type { AuthenticatedUser } from '../auth/auth.types';
 import { AdjustWalletDto } from './dto/adjust-wallet.dto';
 import { WalletService } from './wallet.service';
+import { WalletTopUpStatus } from '../../generated/prisma/client';
 
 @Controller('wallet')
 export class WalletController {
@@ -48,6 +49,27 @@ export class WalletController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.walletService.adjustWallet(userId, dto, user.id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_MASTER)
+  @Get('top-ups/admin')
+  getAllTopUps(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+  ) {
+    const statusValue = Object.values(WalletTopUpStatus).includes(status as WalletTopUpStatus)
+      ? (status as WalletTopUpStatus)
+      : undefined;
+
+    return this.walletService.getAllTopUps({
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+      status: statusValue,
+      search,
+    });
   }
 
   @UseGuards(JwtAuthGuard)

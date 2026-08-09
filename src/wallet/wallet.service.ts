@@ -6,7 +6,9 @@ import { AdjustWalletDto } from './dto/adjust-wallet.dto';
 import { CreateTopUpDto } from './dto/create-top-up.dto';
 import type {
   InitiateTopUpResponse,
+  TopUpAdminItem,
   TopUpSummary,
+  TopUpsAdminPage,
   WalletAdjustmentResponse,
   WalletHistoryResponse,
   WalletSummary,
@@ -215,6 +217,46 @@ export class WalletService {
     });
 
     return topUps.map((t) => this.mapTopUp(t));
+  }
+
+  async getAllTopUps(params: {
+    page?: number;
+    limit?: number;
+    status?: WalletTopUpStatus;
+    search?: string;
+  } = {}): Promise<TopUpsAdminPage> {
+    const page = Math.max(1, params.page ?? 1);
+    const limit = Math.min(100, Math.max(1, params.limit ?? 25));
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.WalletTopUpWhereInput = {
+      ...(params.status ? { status: params.status } : {}),
+      ...(params.search ? {
+        user: { email: { contains: params.search, mode: 'insensitive' as const } },
+      } : {}),
+    };
+
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.walletTopUp.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        include: { wallet: { include: { user: { select: { email: true } } } } },
+      }),
+      this.prisma.walletTopUp.count({ where }),
+    ]);
+
+    return {
+      topUps: rows.map((t) => ({
+        ...this.mapTopUp(t),
+        userEmail: t.wallet.user.email,
+      })) as TopUpAdminItem[],
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async handleChargePaid(params: {
