@@ -80,7 +80,9 @@ export function buildOrderPayload(params: {
 }): AliclikOrderPayload {
   const { order, orderNumber, selectedCourier, productSku, productEan } = params;
   const collectionAmount = order.collectionAmount?.toNumber() ?? 0;
-  const total = 0;
+  // Antes se mandaba total=0 y el monto real solo iba como texto en el note.
+  // Ahora se manda el monto real también en total/price (el note se deja igual).
+  const total = collectionAmount;
   const product: AliclikOrderPayload['products'][number] = {
     quantity: 1,
     price: total,
@@ -98,6 +100,8 @@ export function buildOrderPayload(params: {
     user: order.user.email,
     orderNumber,
     total,
+    // 'C' = contraentrega/COD, único valor que maneja tander por ahora.
+    paymentType: 'C',
     note: [
       order.note,
       `Monto total: ${collectionAmount}`,

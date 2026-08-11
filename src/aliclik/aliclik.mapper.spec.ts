@@ -99,7 +99,7 @@ describe('Aliclik mapper', () => {
     expect(payload.courier.transportId).toBe(10);
   });
 
-  it('sends collection amount in note while keeping Aliclik total at zero', () => {
+  it('sends the real collection amount as total and product price', () => {
     const selectedCourier = selectCourierOption(quote);
 
     const payload = buildOrderPayload({
@@ -111,8 +111,20 @@ describe('Aliclik mapper', () => {
       selectedCourier,
     });
 
-    expect(payload.total).toBe(0);
-    expect(payload.products[0]?.price).toBe(0);
+    expect(payload.total).toBe(125);
+    expect(payload.products[0]?.price).toBe(125);
     expect(payload.note).toContain('Monto total: 125');
+  });
+
+  it('always sends paymentType "C" (contraentrega/COD)', () => {
+    const selectedCourier = selectCourierOption(quote);
+
+    const payload = buildOrderPayload({
+      order,
+      orderNumber: 'TANDER-order-3',
+      selectedCourier,
+    });
+
+    expect(payload.paymentType).toBe('C');
   });
 });

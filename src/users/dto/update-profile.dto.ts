@@ -37,6 +37,10 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @IsString()
+  storeName?: string;
+
+  @IsOptional()
+  @IsString()
   defaultOrigin?: string;
 
   @IsOptional()
@@ -48,6 +52,18 @@ export class UpdateProfileDto {
   @Type(() => Number)
   @IsNumber()
   defaultOriginLng?: number;
+
+  @IsOptional()
+  @IsString()
+  defaultOriginDepartment?: string;
+
+  @IsOptional()
+  @IsString()
+  defaultOriginProvince?: string;
+
+  @IsOptional()
+  @IsString()
+  defaultOriginDistrict?: string;
 
   @IsOptional()
   @IsString()
