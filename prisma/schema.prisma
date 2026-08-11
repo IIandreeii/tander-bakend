@@ -89,10 +89,15 @@ model User {
   yapeHolderName                 String?
   supportPhone                   String?
   aliclikUserCreated             Boolean             @default(false)
+  storeName                      String?
   documentNumber                 String?
   defaultOrigin                  String?
   defaultOriginLat               Decimal?
   defaultOriginLng               Decimal?
+  defaultOriginDepartment        String?
+  defaultOriginProvince          String?
+  defaultOriginDistrict          String?
+  aliclikWarehouseId             String?
 
   wallet                         Wallet?
   walletTransactionsPerformed    WalletTransaction[] @relation("WalletTransactionActor")

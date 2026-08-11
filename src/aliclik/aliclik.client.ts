@@ -1,6 +1,13 @@
 import { BadGatewayException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { AliclikEvidencesAndPaymentsResponse, AliclikOrderPayload, AliclikShippingQuoteResponse } from './aliclik.types';
+import type {
+  AliclikCreateWarehousePayload,
+  AliclikCreateWarehouseResponse,
+  AliclikEvidencesAndPaymentsResponse,
+  AliclikOrderPayload,
+  AliclikShippingQuoteResponse,
+  AliclikUbigeoItem,
+} from './aliclik.types';
 
 interface AliclikRequestOptions {
   method: string;
@@ -83,6 +90,144 @@ export class AliclikClient {
       method: 'GET',
       path: `/external/integration/order/${encodeURIComponent(orderNumber)}/evidences-payments`,
     });
+  }
+
+  /**
+   * Creates a warehouse (store) record in Aliclik. This endpoint lives under the
+   * `order-public` prefix and is authenticated with an `x-api-key` header (ApiKeyAppGuard),
+   * NOT the Bearer token used by `request()` for order endpoints — so it uses its own
+   * fetch/headers instead of the shared `request()` helper.
+   */
+  async createWarehouse(payload: AliclikCreateWarehousePayload): Promise<AliclikCreateWarehouseResponse> {
+    const baseUrl = this.configService.get<string>('ALICLIK_WAREHOUSE_API_URL')
+      ?? this.configService.get<string>('ALICLIK_USER_API_URL')
+      ?? 'https://aliclik-api-release-f6985904c9e2.herokuapp.com';
+    const apiKey = this.configService.getOrThrow<string>('ALICLIK_APP_API_KEY');
+
+    const url = `${baseUrl.replace(/\/$/, '')}/external/store/warehouse/create`;
+
+    this.logger.log(`→ POST ${url}`);
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        // El middleware de aliclik-api (IpBlockMiddleware) exige este header exacto en
+        // TODAS las rutas, incluidas las server-to-server — sin esto responde 403.
+        'x-aliclik-origin': 'aliclik-web',
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(15_000),
+    });
+
+    const rawBody = await response.text();
+    const parsedBody = this.parseResponseBody(rawBody);
+
+    this.logger.log(`← ${response.status} ${url}`);
+    this.logger.log(`  response: ${rawBody}`);
+
+    if (!response.ok) {
+      throw new BadGatewayException({
+        message: 'Aliclik warehouse creation failed',
+        status: response.status,
+        body: parsedBody ?? rawBody,
+      });
+    }
+
+    return parsedBody as AliclikCreateWarehouseResponse;
+  }
+
+  /**
+   * Updates a warehouse already created in Aliclik. Used instead of `createWarehouse`
+   * once we already have an `aliclikWarehouseId` saved, so re-syncing a profile update
+   * doesn't create a duplicate warehouse.
+   */
+  async updateWarehouse(
+    id: string,
+    payload: AliclikCreateWarehousePayload,
+  ): Promise<AliclikCreateWarehouseResponse> {
+    const baseUrl = this.configService.get<string>('ALICLIK_WAREHOUSE_API_URL')
+      ?? this.configService.get<string>('ALICLIK_USER_API_URL')
+      ?? 'https://aliclik-api-release-f6985904c9e2.herokuapp.com';
+    const apiKey = this.configService.getOrThrow<string>('ALICLIK_APP_API_KEY');
+
+    const url = `${baseUrl.replace(/\/$/, '')}/external/store/warehouse/${encodeURIComponent(id)}`;
+
+    this.logger.log(`→ PATCH ${url}`);
+
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'x-aliclik-origin': 'aliclik-web',
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(15_000),
+    });
+
+    const rawBody = await response.text();
+    const parsedBody = this.parseResponseBody(rawBody);
+
+    this.logger.log(`← ${response.status} ${url}`);
+    this.logger.log(`  response: ${rawBody}`);
+
+    if (!response.ok) {
+      throw new BadGatewayException({
+        message: 'Aliclik warehouse update failed',
+        status: response.status,
+        body: parsedBody ?? rawBody,
+      });
+    }
+
+    return parsedBody as AliclikCreateWarehouseResponse;
+  }
+
+  /**
+   * Reads Aliclik's ubigeo catalog (`GET /ubigeo/public`). This route is unauthenticated
+   * (no `x-api-key`/Bearer needed) but only reachable server-to-server, same host as
+   * `createWarehouse`. Used to validate/normalize department/province/district names
+   * before creating a warehouse, since Aliclik's `validateUbigeo()` requires an exact
+   * string match against this same table.
+   */
+  async getUbigeoPublic(params: { nivel: 1 | 2 | 3; countryCode?: string; parentId?: number }): Promise<AliclikUbigeoItem[]> {
+    const baseUrl = this.configService.get<string>('ALICLIK_WAREHOUSE_API_URL')
+      ?? this.configService.get<string>('ALICLIK_USER_API_URL')
+      ?? 'https://aliclik-api-release-f6985904c9e2.herokuapp.com';
+
+    const url = new URL('/external/ubigeo/public', baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`);
+    url.searchParams.set('nivel', String(params.nivel));
+    url.searchParams.set('countryCode', params.countryCode ?? 'PER');
+    if (params.parentId !== undefined) {
+      url.searchParams.set('parentId', String(params.parentId));
+    }
+    const requestUrl = url.toString();
+
+    this.logger.log(`→ GET ${requestUrl}`);
+
+    const response = await fetch(requestUrl, {
+      method: 'GET',
+      headers: {
+        'x-aliclik-origin': 'aliclik-web',
+      },
+      signal: AbortSignal.timeout(15_000),
+    });
+
+    const rawBody = await response.text();
+    const parsedBody = this.parseResponseBody(rawBody);
+
+    this.logger.log(`← ${response.status} ${requestUrl}`);
+
+    if (!response.ok) {
+      throw new BadGatewayException({
+        message: 'Aliclik ubigeo lookup failed',
+        status: response.status,
+        body: parsedBody ?? rawBody,
+      });
+    }
+
+    return (parsedBody as AliclikUbigeoItem[] | null) ?? [];
   }
 
   private async request<T>(options: AliclikRequestOptions): Promise<T> {

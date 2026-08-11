@@ -103,6 +103,7 @@ export interface AliclikOrderPayload {
   user?: string;
   orderNumber: string;
   total: number | string;
+  paymentType?: string;
   note?: string;
   channel?: string;
   createdAtEmidica?: string;
@@ -199,4 +200,38 @@ export interface AliclikEvidencesAndPaymentsResponse {
   orderNumber: string;
   evidences: AliclikEvidenceItem[];
   payments: AliclikPaymentItem[];
+}
+
+export interface AliclikCreateWarehousePayload {
+  companyId: number;
+  name: string;
+  address: string;
+  lat: string;
+  lng: string;
+  department: string;
+  province: string;
+  district: string;
+  phone: string;
+  typeWarehouse: 'NORMAL';
+  codeBank?: string;
+  nameBank?: string;
+  accountNumber?: string;
+  holderName?: string;
+}
+
+export interface AliclikCreateWarehouseResponse {
+  id: number;
+  name: string;
+  countryCode: string;
+  departmentName: string;
+  provinceName: string;
+  districtName: string;
+}
+
+export interface AliclikUbigeoItem {
+  id: number;
+  name: string;
+  countryCode: string;
+  parentId?: number | null;
+  nivel?: number;
 }
