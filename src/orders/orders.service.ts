@@ -3,7 +3,6 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-  ConflictException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { plainToInstance } from 'class-transformer';
@@ -22,8 +21,6 @@ import {
   ORDER_DELIVERED_CHARGE_REASON,
   ORDER_DELIVERED_WALLET_CHARGE_DEFAULT,
   ORDER_PACKAGE_PRESETS,
-  ORDER_STATUS_TRANSITIONS,
-  ORDER_TERMINAL_STATUSES,
 } from './orders.constants';
 import type {
   AdminOrdersPage,
@@ -709,16 +706,11 @@ export class OrdersService {
         return this.mapOrder(order);
       }
 
-      if (ORDER_TERMINAL_STATUSES.includes(order.status)) {
-        throw new ConflictException('Order status can no longer be changed');
-      }
-
-      const allowedStatuses = ORDER_STATUS_TRANSITIONS[order.status];
-
-      if (!allowedStatuses.includes(dto.status)) {
-        throw new BadRequestException('Invalid order status transition');
-      }
-
+      // Sin restricción de transición: cualquier estado puede pasar a cualquier otro
+      // (ej. Aliclik puede avisar DELIVERED sobre un pedido que en tander quedó CANCELLED
+      // por una carrera entre el motorizado entregando y la cancelación). El cobro por
+      // entrega sigue protegido aparte por el unique constraint de walletTransaction
+      // (ver isUniqueOrderChargeConflict más abajo), así que no hay riesgo de doble cobro.
       const updatedOrder = await tx.order.update({
         where: { id: orderId },
         data: { status: dto.status },
