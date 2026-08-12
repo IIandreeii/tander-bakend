@@ -125,6 +125,9 @@ export interface AliclikOrderUserRecord {
   supportPhone: string | null;
   yapeHolderName: string | null;
   bankHolderName: string | null;
+  aliclikWarehouseId: string | null;
+  aliclikProductSkuId: string | null;
+  aliclikProductEan: string | null;
 }
 
 export interface AliclikOrderRecord {
@@ -217,6 +220,9 @@ export interface AliclikCreateWarehousePayload {
   nameBank?: string;
   accountNumber?: string;
   holderName?: string;
+  // Solo se usa al crear (no en update): almacén del que clonar la cobertura de
+  // transporte, para que el almacén nuevo pueda cotizar envíos desde el primer pedido.
+  referenceWarehouseId?: number;
 }
 
 export interface AliclikCreateWarehouseResponse {
@@ -226,6 +232,13 @@ export interface AliclikCreateWarehouseResponse {
   departmentName: string;
   provinceName: string;
   districtName: string;
+}
+
+export interface AliclikCreateProductForWarehouseResponse {
+  productId: number;
+  skuId: number;
+  sku: string;
+  ean: string;
 }
 
 export interface AliclikUbigeoItem {

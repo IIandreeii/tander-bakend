@@ -1,6 +1,7 @@
 import { BadGatewayException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type {
+  AliclikCreateProductForWarehouseResponse,
   AliclikCreateWarehousePayload,
   AliclikCreateWarehouseResponse,
   AliclikEvidencesAndPaymentsResponse,
@@ -182,6 +183,50 @@ export class AliclikClient {
     }
 
     return parsedBody as AliclikCreateWarehouseResponse;
+  }
+
+  /**
+   * Creates the generic "TANDER BOX" product/sku, linked via a new WarehouseSku to the
+   * given warehouse. Called right after a store's warehouse is created, so each store gets
+   * its own sku/ean to send when creating orders (instead of the old shared env-configured
+   * ALICLIK_PRODUCT_SKU/EAN).
+   */
+  async createProductForWarehouse(warehouseId: number): Promise<AliclikCreateProductForWarehouseResponse> {
+    const baseUrl = this.configService.get<string>('ALICLIK_WAREHOUSE_API_URL')
+      ?? this.configService.get<string>('ALICLIK_USER_API_URL')
+      ?? 'https://aliclik-api-release-f6985904c9e2.herokuapp.com';
+    const apiKey = this.configService.getOrThrow<string>('ALICLIK_APP_API_KEY');
+
+    const url = `${baseUrl.replace(/\/$/, '')}/external/product/create-for-warehouse`;
+
+    this.logger.log(`→ POST ${url}`);
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'x-aliclik-origin': 'aliclik-web',
+      },
+      body: JSON.stringify({ warehouseId }),
+      signal: AbortSignal.timeout(15_000),
+    });
+
+    const rawBody = await response.text();
+    const parsedBody = this.parseResponseBody(rawBody);
+
+    this.logger.log(`← ${response.status} ${url}`);
+    this.logger.log(`  response: ${rawBody}`);
+
+    if (!response.ok) {
+      throw new BadGatewayException({
+        message: 'Aliclik product creation failed',
+        status: response.status,
+        body: parsedBody ?? rawBody,
+      });
+    }
+
+    return parsedBody as AliclikCreateProductForWarehouseResponse;
   }
 
   /**
