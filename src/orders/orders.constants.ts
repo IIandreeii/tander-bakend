@@ -56,29 +56,4 @@ export const ORDER_ACTIVE_STATUSES: readonly OrderStatus[] = [
   OrderStatus.IN_TRANSIT,
 ];
 
-export const ORDER_TERMINAL_STATUSES: readonly OrderStatus[] = [
-  OrderStatus.DELIVERED,
-];
-
-export const ORDER_STATUS_TRANSITIONS: Record<string, readonly OrderStatus[]> = {
-  [OrderStatus.PENDING]: [OrderStatus.PICKED, OrderStatus.IN_TRANSIT, OrderStatus.DELIVERED, OrderStatus.RETURNING],
-  [OrderStatus.PICKED]: [OrderStatus.IN_TRANSIT, OrderStatus.DELIVERED, OrderStatus.RETURNING],
-  [OrderStatus.IN_TRANSIT]: [OrderStatus.DELIVERED, OrderStatus.RETURNING],
-  [OrderStatus.DELIVERED]: [],
-  [OrderStatus.RETURNING]: [OrderStatus.RETURNED],
-  // RETURNED puede reingresar al flujo activo (Aliclik puede redespachar un pedido devuelto)
-  [OrderStatus.RETURNED]: [
-    OrderStatus.PENDING,
-    OrderStatus.PICKED,
-    OrderStatus.IN_TRANSIT,
-    OrderStatus.DELIVERED,
-    OrderStatus.RETURNING,
-    OrderStatus.CANCELLED,
-  ],
-  // Legacy values — allow transitions out
-  [OrderStatus.PROCESSING]: [OrderStatus.PENDING, OrderStatus.PICKED, OrderStatus.IN_TRANSIT, OrderStatus.DELIVERED, OrderStatus.RETURNING],
-  [OrderStatus.SHIPPED]: [OrderStatus.PICKED, OrderStatus.IN_TRANSIT, OrderStatus.DELIVERED, OrderStatus.RETURNING],
-  [OrderStatus.CANCELLED]: [OrderStatus.RETURNING, OrderStatus.RETURNED],
-};
-
 export const ORDER_DELIVERED_CHARGE_REASON = 'Order delivered charge';

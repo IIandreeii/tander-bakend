@@ -128,6 +128,7 @@ export class UsersService {
       storeName: true,
       aliclikUserCreated: true,
       aliclikWarehouseId: true,
+      aliclikProductSkuId: true,
       defaultOrigin: true,
       defaultOriginLat: true,
       defaultOriginLng: true,
@@ -158,7 +159,12 @@ export class UsersService {
       this.syncAliclikWarehouse(updated).catch(() => {});
     }
 
-    const { aliclikUserCreated: _aliclikUserCreated, aliclikWarehouseId: _aliclikWarehouseId, ...profile } = updated;
+    const {
+      aliclikUserCreated: _aliclikUserCreated,
+      aliclikWarehouseId: _aliclikWarehouseId,
+      aliclikProductSkuId: _aliclikProductSkuId,
+      ...profile
+    } = updated;
     return profile;
   }
 
@@ -232,6 +238,7 @@ export class UsersService {
     supportPhone: string | null;
     storeName: string | null;
     aliclikWarehouseId?: string | null;
+    aliclikProductSkuId?: string | null;
     defaultOrigin: string | null;
     defaultOriginLat: Prisma.Decimal | null;
     defaultOriginLng: Prisma.Decimal | null;
@@ -283,12 +290,27 @@ export class UsersService {
       } catch (error) {
         this.logger.error(`Aliclik warehouse update failed for ${user.email}: ${error?.message ?? error}`);
       }
+
+      // Backfill: tiendas cuyo almacén ya existía antes de este feature (o a las que les
+      // falló la creación del producto la primera vez) todavía no tienen aliclikProductSkuId
+      // en la base de tander — lo chequeamos acá antes de crear, para no duplicar.
+      if (!user.aliclikProductSkuId) {
+        await this.syncAliclikProduct(user.id, user.email, Number(user.aliclikWarehouseId));
+      }
+
       return;
     }
 
+    const referenceWarehouseId = Number(this.configService.get<string>('ALICLIK_DEFAULT_WAREHOUSE_ID'));
+
     let result: { id?: number | string };
     try {
-      result = await this.aliclikClient.createWarehouse(payload);
+      result = await this.aliclikClient.createWarehouse({
+        ...payload,
+        ...(Number.isInteger(referenceWarehouseId) && referenceWarehouseId > 0
+          ? { referenceWarehouseId }
+          : {}),
+      });
     } catch (error) {
       this.logger.error(`Aliclik warehouse creation failed for ${user.email}: ${error?.message ?? error}`);
       return;
@@ -305,5 +327,25 @@ export class UsersService {
     });
 
     this.logger.log(`Aliclik warehouse created for ${user.email}`);
+
+    // El producto/sku "TANDER BOX" de esta tienda depende del warehouseId recién creado —
+    // se crea una sola vez, junto con el almacén (no en cada update).
+    await this.syncAliclikProduct(user.id, user.email, Number(result.id));
+  }
+
+  private async syncAliclikProduct(userId: string, email: string, warehouseId: number) {
+    try {
+      const product = await this.aliclikClient.createProductForWarehouse(warehouseId);
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          aliclikProductSkuId: String(product.skuId),
+          aliclikProductEan: product.ean,
+        },
+      });
+      this.logger.log(`Aliclik product created for ${email} (skuId=${product.skuId})`);
+    } catch (error) {
+      this.logger.error(`Aliclik product creation failed for ${email}: ${error?.message ?? error}`);
+    }
   }
 }

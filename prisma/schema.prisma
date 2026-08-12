@@ -98,6 +98,8 @@ model User {
   defaultOriginProvince          String?
   defaultOriginDistrict          String?
   aliclikWarehouseId             String?
+  aliclikProductSkuId            String?
+  aliclikProductEan              String?
 
   wallet                         Wallet?
   walletTransactionsPerformed    WalletTransaction[] @relation("WalletTransactionActor")

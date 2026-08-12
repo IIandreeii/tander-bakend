@@ -53,7 +53,7 @@ export class AliclikService {
   async quoteShipping(userId: string, orderId: string) {
     const order = await this.findOrderByIdAndUserIdOrThrow(userId, orderId);
     this.assertOrderHasDestinationCoordinates(order);
-    const warehouseId = this.getDefaultWarehouseId();
+    const warehouseId = this.resolveWarehouseId(order.user);
     const quote = await this.client.quoteShipping(buildQuoteRequest(order, warehouseId));
     const selectedCourier = selectCourierOption(quote);
 
@@ -386,8 +386,8 @@ export class AliclikService {
       throw new BadRequestException('Order is not linked to Aliclik');
     }
 
-    const productIdentifiers = this.getProductIdentifiers();
-    const warehouseId = this.getDefaultWarehouseId();
+    const productIdentifiers = this.getProductIdentifiers(order.user);
+    const warehouseId = this.resolveWarehouseId(order.user);
     const transportId = this.getDefaultTransportId();
     const quote = await this.client.quoteShipping(buildQuoteRequest(order, warehouseId));
     const selectedCourier = selectCourierOption(quote, transportId);
@@ -443,6 +443,9 @@ export class AliclikService {
             supportPhone: true,
             yapeHolderName: true,
             bankHolderName: true,
+            aliclikWarehouseId: true,
+            aliclikProductSkuId: true,
+            aliclikProductEan: true,
           },
         },
       },
@@ -600,6 +603,30 @@ export class AliclikService {
     return warehouseId;
   }
 
+  /**
+   * Cada tienda tiene su propio almacén en Aliclik (`User.aliclikWarehouseId`, creado al
+   * completar el perfil — ver UsersService.syncAliclikWarehouse). Los pedidos deben cotizar
+   * y crearse desde ESE almacén, no desde uno compartido fijo por env var.
+   *
+   * Si la tienda todavía no tiene almacén (perfil incompleto o sync en curso), cae al
+   * `ALICLIK_DEFAULT_WAREHOUSE_ID` de siempre y loguea un warning — no bloquea la creación
+   * del pedido, pero deja rastro para detectar tiendas que quedaron sin sincronizar.
+   */
+  private resolveWarehouseId(user: { id: string; email: string; aliclikWarehouseId: string | null }): number {
+    if (user.aliclikWarehouseId) {
+      const parsed = Number(user.aliclikWarehouseId);
+      if (Number.isInteger(parsed) && parsed > 0) {
+        return parsed;
+      }
+    }
+
+    console.warn(
+      `[AliclikService] User ${user.email} (${user.id}) has no valid aliclikWarehouseId — falling back to ALICLIK_DEFAULT_WAREHOUSE_ID`,
+    );
+
+    return this.getDefaultWarehouseId();
+  }
+
   private getDefaultTransportId(): number | undefined {
     const raw = this.configService.get<string>('ALICLIK_TRANSPORT_ID');
 
@@ -614,7 +641,24 @@ export class AliclikService {
     return transportId;
   }
 
-  private getProductIdentifiers(): { sku?: string; ean?: string } {
+  /**
+   * Cada tienda tiene su propio sku/ean de "TANDER BOX" (creado junto con su almacén — ver
+   * UsersService.syncAliclikProduct), igual que con `resolveWarehouseId`. Si la tienda
+   * todavía no lo tiene (perfil incompleto o sync en curso), cae al
+   * ALICLIK_PRODUCT_SKU/EAN de siempre y loguea un warning.
+   */
+  private getProductIdentifiers(user: { id: string; email: string; aliclikProductSkuId: string | null; aliclikProductEan: string | null }): { sku?: string; ean?: string } {
+    if (user.aliclikProductSkuId || user.aliclikProductEan) {
+      return {
+        sku: user.aliclikProductSkuId ?? undefined,
+        ean: user.aliclikProductEan ?? undefined,
+      };
+    }
+
+    console.warn(
+      `[AliclikService] User ${user.email} (${user.id}) has no aliclikProductSkuId/aliclikProductEan — falling back to ALICLIK_PRODUCT_SKU/EAN`,
+    );
+
     const sku = this.configService.get<string>('ALICLIK_PRODUCT_SKU');
     const ean = this.configService.get<string>('ALICLIK_PRODUCT_EAN');
 
