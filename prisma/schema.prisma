@@ -89,6 +89,7 @@ model User {
   yapeHolderName                 String?
   supportPhone                   String?
   aliclikUserCreated             Boolean             @default(false)
+  aliclikUserId                  Int?
   storeName                      String?
   documentNumber                 String?
   defaultOrigin                  String?

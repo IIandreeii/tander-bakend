@@ -127,6 +127,7 @@ export class UsersService {
       documentNumber: true,
       storeName: true,
       aliclikUserCreated: true,
+      aliclikUserId: true,
       aliclikWarehouseId: true,
       aliclikProductSkuId: true,
       defaultOrigin: true,
@@ -148,7 +149,7 @@ export class UsersService {
       select: profileSelect,
     });
 
-    if (!updated.aliclikUserCreated && this.isProfileComplete(updated)) {
+    if (this.isProfileComplete(updated)) {
       this.syncAliclikUser(updated).catch(() => {});
     }
 
@@ -161,6 +162,7 @@ export class UsersService {
 
     const {
       aliclikUserCreated: _aliclikUserCreated,
+      aliclikUserId: _aliclikUserId,
       aliclikWarehouseId: _aliclikWarehouseId,
       aliclikProductSkuId: _aliclikProductSkuId,
       ...profile
@@ -188,7 +190,27 @@ export class UsersService {
     );
   }
 
-  private async syncAliclikUser(user: { id: string; email: string; supportPhone: string | null }) {
+  /**
+   * Sincroniza el usuario de Aliclik asociado a esta tienda. La primera vez crea el usuario
+   * (`POST /user`, sin auth) y guarda su `aliclikUserId`; en syncs posteriores (ediciones de
+   * perfil) usa ese id para actualizarlo (`PATCH /external/user/:id`, con la api key propia
+   * de ese endpoint — ver AliclikClient.updateUser), en vez de crear un duplicado.
+   */
+  private async syncAliclikUser(user: { id: string; email: string; supportPhone: string | null; aliclikUserId?: number | null }) {
+    if (user.aliclikUserId) {
+      try {
+        await this.aliclikClient.updateUser(user.aliclikUserId, {
+          fullname: user.email,
+          phone: user.supportPhone,
+        });
+        this.logger.log(`Aliclik user updated for ${user.email} (id=${user.aliclikUserId})`);
+      } catch (error) {
+        this.logger.error(`Aliclik user update failed for ${user.email}: ${error?.message ?? error}`);
+      }
+
+      return;
+    }
+
     const baseUrl = this.configService.get<string>('ALICLIK_USER_API_URL')
       ?? 'https://aliclik-api-release-f6985904c9e2.herokuapp.com';
 
@@ -221,12 +243,19 @@ export class UsersService {
       return;
     }
 
+    const created = await response.json() as { id?: number };
+
+    if (created?.id === undefined || created?.id === null) {
+      this.logger.error(`Aliclik user creation returned no id for ${user.email}`);
+      return;
+    }
+
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { aliclikUserCreated: true },
+      data: { aliclikUserCreated: true, aliclikUserId: created.id },
     });
 
-    this.logger.log(`Aliclik user created for ${user.email}`);
+    this.logger.log(`Aliclik user created for ${user.email} (id=${created.id})`);
   }
 
   private async syncAliclikWarehouse(user: {

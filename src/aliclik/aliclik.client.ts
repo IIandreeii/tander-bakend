@@ -230,6 +230,48 @@ export class AliclikClient {
   }
 
   /**
+   * Updates a user already created in Aliclik (`POST /user`, via UsersService.syncAliclikUser).
+   * Authenticated with a fixed `x-api-key` hardcoded on both sides (aliclik-api's
+   * ApiKeyExternalUserGuard) — exclusive to this endpoint, not the shared ALICLIK_APP_API_KEY.
+   */
+  async updateUser(id: number, payload: Record<string, unknown>): Promise<unknown> {
+    const baseUrl = this.configService.get<string>('ALICLIK_WAREHOUSE_API_URL')
+      ?? this.configService.get<string>('ALICLIK_USER_API_URL')
+      ?? 'https://aliclik-api-release-f6985904c9e2.herokuapp.com';
+
+    const url = `${baseUrl.replace(/\/$/, '')}/external/user/${encodeURIComponent(String(id))}`;
+
+    this.logger.log(`→ PATCH ${url}`);
+
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': 'tander-225',
+        'x-aliclik-origin': 'aliclik-web',
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(15_000),
+    });
+
+    const rawBody = await response.text();
+    const parsedBody = this.parseResponseBody(rawBody);
+
+    this.logger.log(`← ${response.status} ${url}`);
+    this.logger.log(`  response: ${rawBody}`);
+
+    if (!response.ok) {
+      throw new BadGatewayException({
+        message: 'Aliclik user update failed',
+        status: response.status,
+        body: parsedBody ?? rawBody,
+      });
+    }
+
+    return parsedBody;
+  }
+
+  /**
    * Reads Aliclik's ubigeo catalog (`GET /ubigeo/public`). This route is unauthenticated
    * (no `x-api-key`/Bearer needed) but only reachable server-to-server, same host as
    * `createWarehouse`. Used to validate/normalize department/province/district names
