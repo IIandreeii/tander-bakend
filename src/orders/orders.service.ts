@@ -592,7 +592,8 @@ export class OrdersService {
   getPackageConfig(): OrderPackageConfigResponse {
     return {
       creationCreditEstimate: this.getCreationCreditEstimate().toString(),
-      deliveredWalletCharge: this.getDeliveredWalletCharge().toString(),
+      deliveredWalletChargeRecaudoActive: this.getDeliveredWalletCharge(true).toString(),
+      deliveredWalletChargeRecaudoInactive: this.getDeliveredWalletCharge(false).toString(),
       packages: ORDER_PACKAGE_PRESETS.map((preset) => ({
         ...preset,
         dimensions: { ...preset.dimensions },

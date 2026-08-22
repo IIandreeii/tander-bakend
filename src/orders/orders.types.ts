@@ -27,7 +27,8 @@ export interface OrderPackagePreset {
 
 export interface OrderPackageConfigResponse {
   creationCreditEstimate: string;
-  deliveredWalletCharge: string;
+  deliveredWalletChargeRecaudoActive: string;
+  deliveredWalletChargeRecaudoInactive: string;
   packages: OrderPackagePreset[];
 }
 

@@ -110,6 +110,7 @@ export function buildOrderPayload(params: {
     note: [
       order.note,
       `Monto total: ${collectionAmount}`,
+      `Recaudo: ${order.recaudo ? 'Sí' : 'No'}`,
       order.user.supportPhone ? `Soporte: ${order.user.supportPhone}` : null,
       order.user.yapeHolderName ? `Titular Yape: ${order.user.yapeHolderName}` : null,
       order.user.bankHolderName ? `Titular Banco: ${order.user.bankHolderName}` : null,
