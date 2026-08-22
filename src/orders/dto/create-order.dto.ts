@@ -1,5 +1,5 @@
 import { Transform, Type } from 'class-transformer';
-import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsBoolean, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 import { OrderPackageType } from '../../../generated/prisma/client';
 
 const trimText = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
@@ -78,4 +78,8 @@ export class CreateOrderDto {
   @IsNumber({}, { message: 'El monto a cobrar debe ser un número' })
   @Min(0, { message: 'El monto a cobrar no puede ser negativo' })
   collectionAmount?: number;
+
+  @IsOptional()
+  @IsBoolean({ message: 'El recaudo debe ser verdadero o falso' })
+  recaudo?: boolean;
 }

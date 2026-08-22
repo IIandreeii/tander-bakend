@@ -98,8 +98,12 @@ describe('OrdersService', () => {
         return '10';
       }
 
-      if (key === 'ORDER_DELIVERED_WALLET_CHARGE') {
+      if (key === 'ORDER_DELIVERED_WALLET_CHARGE_RECAUDO_ACTIVE') {
         return '13.5';
+      }
+
+      if (key === 'ORDER_DELIVERED_WALLET_CHARGE_RECAUDO_INACTIVE') {
+        return '11';
       }
 
       return undefined;
@@ -118,6 +122,7 @@ describe('OrdersService', () => {
     recipientFullName: 'Test Receiver',
     recipientPhone: '+5491111111111',
     note: 'Internal note',
+    recaudo: true,
     createdAt: new Date('2026-06-05T00:00:00.000Z'),
     updatedAt: new Date('2026-06-05T00:00:00.000Z'),
     deliveredChargeTransactionId: null,

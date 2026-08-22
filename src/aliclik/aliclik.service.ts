@@ -424,6 +424,7 @@ export class AliclikService {
         note: true,
         weightGrams: true,
         collectionAmount: true,
+        recaudo: true,
         originLat: true,
         originLng: true,
         destinationLat: true,

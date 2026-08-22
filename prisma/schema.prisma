@@ -156,6 +156,7 @@ model Order {
   note                        String?
   weightGrams                 Int                  @default(0)
   collectionAmount            Decimal?             @db.Decimal(10, 2)
+  recaudo                     Boolean              @default(false)
   originLat                   Decimal?             @db.Decimal(10, 7)
   originLng                   Decimal?             @db.Decimal(10, 7)
   destinationLat              Decimal?             @db.Decimal(10, 7)

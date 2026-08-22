@@ -57,6 +57,7 @@ export interface OrderSummary {
   note: string | null;
   weightGrams: number;
   collectionAmount: string | null;
+  recaudo: boolean;
   aliclikOrderNumber: string | null;
   aliclikSyncStatus: AliclikSyncStatus;
   aliclikLastSyncAction: AliclikSyncAction | null;

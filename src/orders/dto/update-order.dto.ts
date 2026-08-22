@@ -1,5 +1,5 @@
 import { Transform, Type } from 'class-transformer';
-import { IsEnum, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsBoolean, IsEnum, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 import { OrderPackageType } from '../../../generated/prisma/client';
 
 const trimText = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
@@ -82,4 +82,8 @@ export class UpdateOrderDto {
   @IsNumber()
   @Min(0)
   collectionAmount?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  recaudo?: boolean;
 }

@@ -108,6 +108,7 @@ export interface AliclikOrderPayload {
   channel?: string;
   createdAtEmidica?: string;
   delivery: number;
+  motorizedCost?: number;
   companyCode?: string;
   companyName?: string;
   companyParentId?: number;
@@ -142,6 +143,7 @@ export interface AliclikOrderRecord {
   note: string | null;
   weightGrams: number;
   collectionAmount: Prisma.Decimal | null;
+  recaudo: boolean;
   originLat: Prisma.Decimal | null;
   originLng: Prisma.Decimal | null;
   destinationLat: Prisma.Decimal | null;

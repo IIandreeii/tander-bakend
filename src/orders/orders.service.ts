@@ -19,7 +19,8 @@ import {
   ORDER_ACTIVE_STATUSES,
   ORDER_CREATION_CREDIT_ESTIMATE_DEFAULT,
   ORDER_DELIVERED_CHARGE_REASON,
-  ORDER_DELIVERED_WALLET_CHARGE_DEFAULT,
+  ORDER_DELIVERED_WALLET_CHARGE_RECAUDO_ACTIVE_DEFAULT,
+  ORDER_DELIVERED_WALLET_CHARGE_RECAUDO_INACTIVE_DEFAULT,
   ORDER_PACKAGE_PRESETS,
 } from './orders.constants';
 import type {
@@ -63,6 +64,7 @@ interface OrderRecord {
   note: string | null;
   weightGrams: number;
   collectionAmount: Prisma.Decimal | null;
+  recaudo: boolean;
   aliclikOrderNumber: string | null;
   aliclikSyncStatus: OrderSummary['aliclikSyncStatus'];
   aliclikLastSyncAction: OrderSummary['aliclikLastSyncAction'];
@@ -163,6 +165,7 @@ export class OrdersService {
           weightGrams: dto.weightGrams,
           note: finalNote,
           collectionAmount: dto.collectionAmount != null ? new Prisma.Decimal(dto.collectionAmount) : null,
+          recaudo: dto.recaudo ?? false,
           originLat: dto.originLat != null ? new Prisma.Decimal(dto.originLat) : null,
           originLng: dto.originLng != null ? new Prisma.Decimal(dto.originLng) : null,
           destinationLat: dto.destinationLat != null ? new Prisma.Decimal(dto.destinationLat) : null,
@@ -447,6 +450,7 @@ export class OrdersService {
     if (dto.packageType !== undefined) data.packageType = dto.packageType;
     if (dto.weightGrams !== undefined) data.weightGrams = dto.weightGrams;
     if (dto.collectionAmount !== undefined) data.collectionAmount = new Prisma.Decimal(dto.collectionAmount);
+    if (dto.recaudo !== undefined) data.recaudo = dto.recaudo;
     if (dto.originLat !== undefined) data.originLat = new Prisma.Decimal(dto.originLat);
     if (dto.originLng !== undefined) data.originLng = new Prisma.Decimal(dto.originLng);
     if (dto.destinationLat !== undefined) data.destinationLat = new Prisma.Decimal(dto.destinationLat);
@@ -737,7 +741,7 @@ export class OrdersService {
         await tx.$queryRaw`SELECT "id" FROM "wallets" WHERE "userId" = ${order.userId} FOR UPDATE`;
 
         const wallet = await this.findWalletByUserIdOrThrow(tx, order.userId);
-        const deliveredCharge = this.getDeliveredWalletCharge();
+        const deliveredCharge = this.getDeliveredWalletCharge(order.recaudo);
         const balanceAfter = wallet.balance.minus(deliveredCharge);
 
         await tx.wallet.update({
@@ -908,6 +912,7 @@ export class OrdersService {
       note: order.note,
       weightGrams: order.weightGrams,
       collectionAmount: formatDecimal(order.collectionAmount, 2),
+      recaudo: order.recaudo,
       aliclikOrderNumber: order.aliclikOrderNumber ?? null,
       aliclikSyncStatus: order.aliclikSyncStatus ?? ALICLIK_SYNC_STATUS.NOT_SYNCED,
       aliclikLastSyncAction: order.aliclikLastSyncAction ?? null,
@@ -940,11 +945,13 @@ export class OrdersService {
     );
   }
 
-  private getDeliveredWalletCharge(): Prisma.Decimal {
-    return new Prisma.Decimal(
-      this.configService.get<string>('ORDER_DELIVERED_WALLET_CHARGE') ??
-        ORDER_DELIVERED_WALLET_CHARGE_DEFAULT,
-    );
+  private getDeliveredWalletCharge(recaudo: boolean): Prisma.Decimal {
+    const envVar = recaudo ? 'ORDER_DELIVERED_WALLET_CHARGE_RECAUDO_ACTIVE' : 'ORDER_DELIVERED_WALLET_CHARGE_RECAUDO_INACTIVE';
+    const fallback = recaudo
+      ? ORDER_DELIVERED_WALLET_CHARGE_RECAUDO_ACTIVE_DEFAULT
+      : ORDER_DELIVERED_WALLET_CHARGE_RECAUDO_INACTIVE_DEFAULT;
+
+    return new Prisma.Decimal(this.configService.get<string>(envVar) ?? fallback);
   }
 
   private isUniqueOrderChargeConflict(error: unknown): boolean {

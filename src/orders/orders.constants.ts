@@ -1,7 +1,8 @@
 import { OrderPackageType, OrderStatus } from '../../generated/prisma/client';
 
 export const ORDER_CREATION_CREDIT_ESTIMATE_DEFAULT = '10';
-export const ORDER_DELIVERED_WALLET_CHARGE_DEFAULT = '13.5';
+export const ORDER_DELIVERED_WALLET_CHARGE_RECAUDO_ACTIVE_DEFAULT = '13.5';
+export const ORDER_DELIVERED_WALLET_CHARGE_RECAUDO_INACTIVE_DEFAULT = '11';
 
 export const ORDER_PACKAGE_PRESETS: readonly {
   type: OrderPackageType;
