@@ -157,7 +157,7 @@ export class WalletService {
   async initiateTopUp(userId: string, dto: CreateTopUpDto): Promise<InitiateTopUpResponse> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { email: true, documentNumber: true },
+      select: { email: true, documentNumber: true, documentType: true, name: true, lastname: true },
     });
 
     if (!user) {
@@ -166,6 +166,14 @@ export class WalletService {
 
     if (!user.documentNumber) {
       throw new BadRequestException('Debés configurar tu número de documento (DNI/RUC) en el perfil antes de recargar');
+    }
+
+    if (!user.name) {
+      throw new BadRequestException('Debés configurar tu nombre en el perfil antes de recargar');
+    }
+
+    if (user.documentType !== 'RUC' && !user.lastname) {
+      throw new BadRequestException('Debés configurar tu apellido en el perfil antes de recargar');
     }
 
     const wallet = await this.findWalletByUserIdOrThrow(userId);
@@ -183,6 +191,9 @@ export class WalletService {
       topUpId: topUp.id,
       amount: dto.amount,
       documentNumber: user.documentNumber,
+      documentType: user.documentType,
+      name: user.name,
+      lastname: user.lastname,
       email: user.email,
     });
 

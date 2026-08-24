@@ -83,6 +83,9 @@ export class UsersService {
         yapeHolderName: true,
         supportPhone: true,
         documentNumber: true,
+        documentType: true,
+        name: true,
+        lastname: true,
         storeName: true,
         defaultOrigin: true,
         defaultOriginLat: true,
@@ -104,6 +107,9 @@ export class UsersService {
     yapeHolderName?: string;
     supportPhone?: string;
     documentNumber?: string;
+    documentType?: 'DNI' | 'CE' | 'PAS' | 'RUC';
+    name?: string;
+    lastname?: string;
     storeName?: string;
     defaultOrigin?: string;
     defaultOriginLat?: number;

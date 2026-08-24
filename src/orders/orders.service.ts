@@ -127,11 +127,46 @@ export class OrdersService {
     return '\n\nDatos de cobro:\n' + lines.map((l) => `• ${l}`).join('\n');
   }
 
+  // Cobrana exige name/lastname/documentNumber para poder cobrar el recaudo del pedido —
+  // sin estos datos el pedido no puede sincronizarse con Aliclik/Cobrana, así que se bloquea acá.
+  private ensureProfileCompleteForOrders(user: {
+    documentNumber: string | null;
+    documentType: string;
+    name: string | null;
+    lastname: string | null;
+  } | null): void {
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    if (!user.documentNumber) {
+      throw new BadRequestException('Debés configurar tu número de documento (DNI/RUC) en el perfil antes de crear un pedido');
+    }
+
+    if (!user.name) {
+      throw new BadRequestException('Debés configurar tu nombre en el perfil antes de crear un pedido');
+    }
+
+    if (user.documentType !== 'RUC' && !user.lastname) {
+      throw new BadRequestException('Debés configurar tu apellido en el perfil antes de crear un pedido');
+    }
+  }
+
   async createOrder(userId: string, dto: CreateOrderDto): Promise<OrderSummary> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { paymentPhone: true, paymentMethod: true, bank: true, bankAccountNumber: true },
+      select: {
+        paymentPhone: true,
+        paymentMethod: true,
+        bank: true,
+        bankAccountNumber: true,
+        documentNumber: true,
+        documentType: true,
+        name: true,
+        lastname: true,
+      },
     });
+    this.ensureProfileCompleteForOrders(user);
     const paymentNote = this.buildPaymentNote(user);
     const finalNote = dto.note ? dto.note + paymentNote : (paymentNote || null);
 
@@ -375,6 +410,12 @@ export class OrdersService {
   }
 
   async bulkCreateOrders(userId: string, fileBuffer: Buffer): Promise<BulkCreateOrdersResponse> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { documentNumber: true, documentType: true, name: true, lastname: true },
+    });
+    this.ensureProfileCompleteForOrders(user);
+
     const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = xlsx.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: '' });

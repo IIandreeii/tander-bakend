@@ -1,5 +1,8 @@
+export type CobranaDocumentType = 'DNI' | 'CE' | 'PAS' | 'RUC';
+
 export interface CobranaCustomer {
   documentNumber: string;
+  documentType?: CobranaDocumentType;
   name?: string | null;
   lastname?: string | null;
   email?: string | null;
@@ -39,6 +42,15 @@ export interface CobranaCharge {
   paidAt: string | null;
 }
 
+export interface CreateCobranaChargeCustomer {
+  documentNumber: string;
+  documentType?: CobranaDocumentType;
+  name: string;
+  lastname?: string;
+  email?: string;
+  phoneNumber?: string;
+}
+
 export interface CreateCobranaChargeRequest {
   amount: number;
   currency?: 'PEN';
@@ -46,7 +58,7 @@ export interface CreateCobranaChargeRequest {
   method: 'services' | 'gateway';
   option: '360pay' | 'cobrana' | 'monnet';
   feeMode: 'merchant';
-  customer: CobranaCustomer;
+  customer: CreateCobranaChargeCustomer;
   externalRef?: string;
   dueDate?: string;
   metadata?: Record<string, string | number | boolean | null>;

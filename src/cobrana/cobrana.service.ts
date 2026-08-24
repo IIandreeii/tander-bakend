@@ -2,12 +2,15 @@ import { BadGatewayException, BadRequestException, Injectable, Logger, Unauthori
 import { ConfigService } from '@nestjs/config';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { CobranaClient } from './cobrana.client';
-import type { CobranaWebhookEvent, CreateCobranaChargeRequest } from './cobrana.types';
+import type { CobranaDocumentType, CobranaWebhookEvent, CreateCobranaChargeRequest } from './cobrana.types';
 
 export interface CreateTopUpChargeParams {
   topUpId: string;
   amount: number;
   documentNumber: string;
+  documentType: CobranaDocumentType;
+  name: string;
+  lastname: string | null;
   email: string;
 }
 
@@ -32,6 +35,15 @@ export class CobranaService {
     );
     const useGateway = params.amount < gatewayMaxAmount;
 
+    const customer = {
+      documentNumber: params.documentNumber,
+      documentType: params.documentType,
+      name: params.name,
+      // La razón social del RUC va completa en `name`; Cobrana no exige lastname en ese caso.
+      ...(params.documentType !== 'RUC' && params.lastname ? { lastname: params.lastname } : {}),
+      email: params.email,
+    };
+
     const payload: CreateCobranaChargeRequest = useGateway
       ? {
           amount: params.amount,
@@ -40,7 +52,7 @@ export class CobranaService {
           method: 'gateway',
           option: 'monnet',
           feeMode: 'merchant',
-          customer: { documentNumber: params.documentNumber, email: params.email },
+          customer,
           externalRef: params.topUpId,
         }
       : {
@@ -50,7 +62,7 @@ export class CobranaService {
           method: 'services',
           option: '360pay',
           feeMode: 'merchant',
-          customer: { documentNumber: params.documentNumber, email: params.email },
+          customer,
           externalRef: params.topUpId,
         };
 
