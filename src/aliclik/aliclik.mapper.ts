@@ -20,10 +20,8 @@ export interface AliclikProductIdentifiers {
 
 const ALICLIK_ORDER_PREFIX = 'TANDER';
 
-// Costo de motorizado que se manda a Aliclik según el flag "recaudo" del pedido: 10 si el
-// recaudo está activo, 5 si no. Ver Order.recaudo / Shipping.motorizedCost en aliclik-api.
-const MOTORIZED_COST_RECAUDO_ACTIVE = 10;
-const MOTORIZED_COST_RECAUDO_INACTIVE = 5;
+// Costo de motorizado que se manda a Aliclik: fijo en 9, con o sin recaudo.
+const MOTORIZED_COST = 9;
 
 function formatDecimal(value: { toString(): string } | null | undefined, digits: number): string {
   if (!value) {
@@ -119,7 +117,7 @@ export function buildOrderPayload(params: {
     channel: 'TANDER',
     createdAtEmidica: order.createdAt.toISOString(),
     delivery: selectedCourier.deliveryCost,
-    motorizedCost: order.recaudo ? MOTORIZED_COST_RECAUDO_ACTIVE : MOTORIZED_COST_RECAUDO_INACTIVE,
+    motorizedCost: MOTORIZED_COST,
     currency: { code: 'PEN', symbol: 'S/' },
     customer: {
       name: order.recipientFullName,
